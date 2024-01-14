@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Namespace Hierarchy</title>
+    <link rel="shortcut icon" href="icon.png">
+    <script id="d3-js" src="d3.v7.min.js"></script>
+  </head>
+  <body>
+
+    <div id="top-bar" style="height: 40px; width: 100%; background-color: #1e2e54;">
+      <a href="https://github.com/kubernetes-sigs/hierarchical-namespaces/releases" style="float: left; margin: 10px; color: #caad5b;">Download CLI tool</a>
+      <a href="logout" style="float: right; margin: 10px; color: #cfd3e3;">Logout</a>
+      <div id="username" style="float: right; margin: 10px; color: #cfd3e3;"></div>
+      <script id="get-username">
+        fetch('/api/get/username').then(res => {
+          return res.text()
+        }).then(username => {
+          document.getElementById('username').innerText = username
+        }).catch(err => {
+          console.log(err)
+          document.getElementById('username').innerText = "unknown_username"
+        })
+      </script>
+    </div>
+
+    <div style="width: 100%; height: calc(100% - 40px); position: relative; font-family: cursive;">
+      <svg style="width: 100%; height: 100%;">
+      </svg>
+      <div id="right-bar">
+        <div id="sb-name" style="width: 100%; text-align: center; font-size: 40px; margin-top: 20px;">
+        </div>
+        <div id="sb-details" style="margin: 20px;">
+          <div class="sb-header" style="margin: 20px; color: #d93333;">
+            HierarchicalResourceQuota
+          </div>
+          <div id="sb-quota" style="margin: 20px;">
+          </div>
+          <div class="sb-header" style="margin: 20px; color: #e1dd0c;">
+            Usage
+          </div>
+          <div id="sb-usage" style="margin: 20px;">
+          </div>
+          <div class="sb-header" style="margin: 20px; color: #05b505;">
+            Annotations
+          </div>
+          <div id="sb-annotations" style="margin: 20px;">
+          </div>
+          <div class="sb-header" style="margin: 20px; color: #83abf7;">
+            Labels
+          </div>
+          <div id="sb-labels" style="margin: 20px;">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="bottom-bar" style="height: 30px; width: -webkit-fill-available; position: absolute; bottom: 0; pointer-events: none; padding: 10px; user-select: none;">
+      <div id="zoom-tree" onclick="zoom_to_tree(500)" style="width: 20px; height: 20px; margin-left: 20px; cursor: pointer; pointer-events: all; float: left; border: white dashed 5px; border-radius: 5px;"></div>
+      <div id="flip-tree" onclick="flip_tree()"       style="width: 30px; height: 30px; margin-left: 20px; cursor: pointer; pointer-events: all; float: left; font-weight: bold; font-size: 28px;">
+        <svg fill="white" viewBox="0 0 214.367 214.367" xml:space="preserve">
+          <path d="M202.403,95.22c0,46.312-33.237,85.002-77.109,93.484v25.663l-69.76-40l69.76-40v23.494 c27.176-7.87,47.109-32.964,47.109-62.642c0-35.962-29.258-65.22-65.22-65.22s-65.22,29.258-65.22,65.22 c0,9.686,2.068,19.001,6.148,27.688l-27.154,12.754c-5.968-12.707-8.994-26.313-8.994-40.441C11.964,42.716,54.68,0,107.184,0 S202.403,42.716,202.403,95.22z"/>
+        </svg>
+      </div>
+      <div id="flip-tree" onclick="collapse_toggle()" style="width: 30px; height: 30px; margin-left: 20px; cursor: pointer; pointer-events: all; float: left; font-weight: bold; font-size: 25px;">
+        <svg viewBox="0 0 20 20">
+          <g style="stroke: white; stroke-width: 2px;">
+            <path d="M 0,10  C 10,10  10,2  20,2"/>
+            <path d="M 0,10  C 10,10  10,10  20,10"/>
+            <path d="M 0,10  C 10,10  10,18  20,18"/>
+          </g>
+        </svg>
+      </div>
+
+      <a href="https://github.com/zfrhv/hnc-ui" style="float: right; text-decoration: none; background-color: #8157a3; border-radius: 30px; width: 30px; height: 30px; pointer-events: all;">
+        <div style="transform: scaleY(1.8); margin-left: 2px; margin-top: 7px; font-size: 13.5px; font-weight: bold; color: black;">
+          &lt / &gt
+        </div>
+       </a>
+    </div>
+
+    <div id="ns_menu" style="display: none; position: absolute; user-select: none;">
+      <div id="create-ns" class="option-text">
+        <span> Create Namespace </span>
+      </div>
+      <div id="create-subns-option" style="padding: 0;">
+        <hr>
+        <div id="create-subns" class="option-text">
+          <span> Create SubNamespace </span>
+        </div>
+      </div>
+      <div id="delete-ns-option" style="padding: 0;">
+        <hr>
+        <div id="delete-ns" class="option-text">
+          <span> Delete Namespace </span>
+        </div>
+      </div>
+    </div>
+
+    <style>
+html, body {
+  margin: 0;
+  padding: 0;
+  background-color: #080d19;
+  width: 100%;
+  height: 100%;
+  color: white;
+  overflow: hidden;
+}
+
+.link {
+  fill: none;
+  stroke: #aeaeae;
+  stroke-width: 10px;
+}
+
+.node {
+  cursor: pointer;
+}
+
+.node foreignObject {
+  border-radius: 10px;
+  border: solid 10px;
+}
+.node .background {
+  opacity: 0.6;
+}
+.node foreignObject > div {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  font-size: 35px;
+  user-select: none;
+  display: flex;
+}
+.is-subns {
+  margin-left: 10px;
+}
+.ns-name {
+  margin-left: 10px;
+  margin-right: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.text-icons {
+  display: flex;
+  margin-left: auto;
+}
+.text-icons > div {
+  margin-right: 10px;
+}
+.node .ns-description {
+  padding: 5px;
+}
+.sb-header {
+  font-size: 25px;
+}
+
+#ns_menu {
+  background-color: #28385d;
+  border: 2px solid white;
+  border-radius: 5px;
+}
+#ns_menu .option-text {
+  cursor: pointer;
+  padding: 8px;
+}
+hr {
+  margin: 0;
+}
+
+#right-bar {
+  height: 100%;
+  width: 600px;
+  background-color: #414651;
+  position: absolute;
+  top: 0;
+  right: -700px;
+  transition-duration: 0.5s;
+  border-left: solid #545d6f;
+  overflow: auto;
+}
+#right-bar::-webkit-scrollbar {
+  width: 10px;
+}
+#right-bar::-webkit-scrollbar-track {
+  background-color: #292b31;
+}
+#right-bar::-webkit-scrollbar-thumb {
+  background-color: #575859;
+  border-radius: 5px;
+}
+    </style>
+    <script id="hierarchy-graph">
+let selected_ns
+let root
+
+// This tree is flipped from top-bottom to left-right, thus all the x and y values will be switched.
+let left_to_right = true
+
+const node_width = 500
+const node_height = 75
+let treemap
+if (left_to_right) {
+  treemap = d3.tree().nodeSize([node_height + 0.6*node_height, node_width + 1.6*node_width]);
+} else {
+  treemap = d3.tree().nodeSize([node_width + 0.6*node_width, node_height + 1.6*node_width]);
+}
+
+let zoomed_on_page_load = false
+
+let svg = d3
+  .select("svg");
+
+const svg_group = svg.append("g")
+
+const zoom = d3.zoom()
+.on("zoom", function ({transform}) {
+  svg_group.attr("transform", transform)
+})
+
+svg
+.on("click", function(event) {
+
+  selected_ns = event.d;
+
+  // hide or show the right-bar
+  const right_bar = d3.select('#right-bar')
+  if (event.display_details === true) {
+    update_right_bar_text();
+    right_bar.style('right', "0px");
+  } else if (event.display_details === undefined) {
+    right_bar.style('right', "-700px");
+  }
+})
+.on("contextmenu", function(event) {
+
+  selected_ns = event.d;
+
+  d3.select('#ns_menu')
+    .style('left', event.pageX+'px')
+    .style('top', event.pageY+'px')
+    .style('display', 'block');
+
+  d3.select('#create-subns-option')
+    .style('display', event.display_create_subns ? "block" : "none");
+
+  d3.select('#delete-ns-option')
+    .style('display', event.display_delete_ns ? "block" : "none");
+
+  event.preventDefault();
+});
+
+svg.call(zoom);
+
+let last_id = 0;
+const duration = 400;
+
+// hide right click box
+document.addEventListener("click", function() {
+  d3.select('#ns_menu').style('display', 'none');
+})
+
+function collapse_toggle() {
+  if (root.collapsed) {
+    root.children.forEach(uncollapse);
+    root.collapsed = false;
+  } else {
+    root.children.forEach(collapse);
+    root.collapsed = true;
+  }
+  update(root.children[Math.floor(root.children.length/2)]);
+}
+
+function collapse(d) {
+  if (d.children) {
+    d._children = d.children;
+    d.children = null;
+  }
+  if (d._children) {
+    d._children.forEach(collapse);
+  }
+}
+
+function uncollapse(d) {
+  if (d._children) {
+    d.children = d._children;
+    d._children = null;
+  }
+  if (d.children) {
+    d.children.forEach(uncollapse);
+  }
+}
+
+async function flip_tree() {
+  left_to_right = !left_to_right;
+
+  if (left_to_right) {
+    treemap = d3.tree().nodeSize([node_height + 0.6*node_height, node_width + 1.6*node_width]);
+  } else {
+    treemap = d3.tree().nodeSize([node_width + 0.6*node_width, node_height + 1.6*node_width]);
+  }
+
+  update(root);
+  // wait for the animation
+  await new Promise(r => setTimeout(r, duration));
+  
+  zoom_to_tree(500);
+}
+
+function update_right_bar_text() {
+  const right_bar = d3.select('#right-bar')
+  right_bar.select('#sb-name').text(selected_ns.data.name);
+  right_bar.select('#sb-quota').html(quota_to_string(selected_ns.data.quota));
+  right_bar.select('#sb-usage').html(usage_to_string(selected_ns.data.usage));
+  right_bar.select('#sb-annotations').html(annotations_to_string(selected_ns.data.annotations));
+  right_bar.select('#sb-labels').html(labels_to_string(selected_ns.data.labels));
+}
+
+function quota_to_string(quota) {
+  if (quota) {
+    if (quota.message) {
+      return quota.message
+    } else {
+      return Object.keys(quota.spec.hard).map(key => `${key}: ${quota.status.used[key]}/${quota.spec.hard[key]}`).join('<br>')
+    }
+  } else {
+    return "None"
+  }
+}
+function usage_to_string(usage) {
+  if (usage) {
+    if (usage.message) {
+      return usage.message
+    } else {
+      return Object.keys(usage.status.used).map(key => `${key}: ${usage.status.used[key]}`).join('<br>')
+    }
+  } else {
+    return "Unknown (need to create quota to be able to know)"
+  }
+}
+function annotations_to_string(annotations) {
+  if (annotations) {
+    return Object.keys(annotations).map(key => {
+      if (annotations[key].length > 20) {
+        return `<details><summary>${key}:</summary>${annotations[key]}</details>`
+      } else {
+        return `${key}: ${annotations[key]}<br>`
+      }
+    }).join('')
+  } else {
+    return "None"
+  }
+}
+function labels_to_string(labels) {
+  if (labels) {
+    return Object.keys(labels).map(key => {
+      if (labels[key].length > 20) {
+        return `<details><summary>${key}:</summary>${labels[key]}</details>`
+      } else {
+        return `${key}: ${labels[key]}<br>`
+      }
+    }).join('')
+  } else {
+    return "None"
+  }
+}
+
+function display_children(event, d) {
+  event.display_details = "dont touch";
+
+  if (d.children) {
+    d._children = d.children;
+    d.children = null;
+  } else {
+    d.children = d._children;
+    d._children = null;
+  }
+  update(d);
+}
+
+function zoom_to_tree(duration) {
+  const bounds = svg_group.node().getBBox()
+  const parent = svg_group.node().parentElement
+  const parent_bounds = {
+    width: parent.clientWidth,
+    height: parent.clientHeight
+  }
+
+  const mid = {
+    x: bounds.x + bounds.width/2,
+    y: bounds.y + bounds.height/2
+  }
+
+  const scale = 0.9 / Math.max(bounds.width / parent_bounds.width, bounds.height / parent_bounds.height)
+
+  const translate = [
+    parent_bounds.width / 2 - scale * mid.x,
+    parent_bounds.height / 2 - scale * mid.y
+  ]
+
+  svg
+    .transition()
+    .duration(duration || 0)
+    .call(zoom.transform, d3.zoomIdentity.translate(...translate).scale(scale))
+
+}
+
+function update(source) {
+  const treeData = treemap(root);
+  const nodes = treeData.descendants(),
+    links = treeData.descendants().slice(1);
+  nodes.forEach(function(d) {
+    if (!d.parent) {
+      d.color = "gold"
+    } else {
+      const total_siblings = d.parent.data.children.length
+      const my_index = d.parent.data.children.indexOf(d.data)
+      d.color = num_to_color(my_index/total_siblings)
+    }
+  });
+  const node = svg_group.selectAll("g.node").data(nodes, function(d) {
+    return d.id || (d.id = ++last_id);
+  });
+
+  const nodeEnter = node
+    .enter()
+    .append("g")
+    .style("display", function(d) {
+      return d.depth === 0 ? "none" : "block";
+    })
+    .style("opacity", 0);
+
+  nodeEnter
+  .on("click", function(event, d) {
+    if (event.display_details === undefined) {
+      event.display_details = true;
+    }
+    event.d = d;
+  })
+  .on("contextmenu", function(event, d) {
+    event.display_create_subns = true;
+    event.display_delete_ns = true;
+    event.d = d;
+  })
+  .attr("class", "node");
+
+  const foreignObjectEnter = nodeEnter
+    .append("foreignObject")
+    .attr("width", node_width)
+    .attr("height", node_height);
+
+  nodeEnter
+    .attr("transform", function(d) {
+      if (left_to_right) {
+        return "translate(" + d.y + "," + d.x + ")";
+      } else {
+        return "translate(" + d.x + "," + d.y + ")";
+      }
+    })
+    .call(function() {
+      if (!zoomed_on_page_load){
+        zoomed_on_page_load = true
+        zoom_to_tree()
+      }
+    })
+    .attr("transform", function(d) {
+      if (left_to_right) {
+        return "translate(" + source.y + "," + source.x + ")";
+      } else {
+        return "translate(" + source.x + "," + source.y + ")";
+      }
+    });
+
+  foreignObjectEnter
+    .append("xhtml:div")
+    .attr("class", "background");
+
+  const nodeText = foreignObjectEnter
+    .append("xhtml:div")
+    .style("white-space", "nowrap");
+
+  nodeText
+    .append("xhtml:div")
+    .attr("class", "is-subns")
+    .text("[s]")
+    .style("display", function(d) {
+      return d.data.is_subnamespace ? "block" : "none";
+    });
+
+  nodeText
+    .append("xhtml:div")
+    .attr("class", "ns-name");
+
+  const nodeTextRight = nodeText
+    .append("xhtml:div")
+    .attr("class", "text-icons");
+
+  nodeTextRight
+    .append("xhtml:div")
+    .attr("class", "terminating")
+    .text("❌");
+
+  nodeTextRight
+    .append("xhtml:div")
+    .attr("class", "quota")
+    .text("Q");
+
+  nodeTextRight
+    .append("xhtml:div")
+    .attr("class", "children-button")
+    .text("▶")
+    .on("click", display_children);
+
+  const nodeUpdate = nodeEnter.merge(node);
+
+  nodeUpdate
+    .transition()
+    .duration(duration)
+    .style("opacity", 1)
+    .attr("transform", function(d) {
+      if (left_to_right) {
+        return "translate(" + d.y + "," + d.x + ")";
+      } else {
+        return "translate(" + d.x + "," + d.y + ")";
+      }
+    });
+
+  const foreignObjectUpdate = nodeUpdate.select("foreignObject")
+
+  foreignObjectUpdate
+    .style("border-color", function(d) {
+      return d.parent?.color ? d.parent.color : "gray" 
+    })
+
+  foreignObjectUpdate
+    .select(".background")
+    .style("background-color", function(d) {
+      return d.parent?.color ? d.parent.color : "gray";
+    });
+
+  foreignObjectUpdate
+    .select(".ns-name")
+    .text(function(d) {
+      return d.data.name
+    });
+
+  foreignObjectUpdate
+    .select(".terminating")
+    .style("display", function(d) {
+      return d.data.terminating ? "block" : "none";
+    });
+  
+  foreignObjectUpdate
+    .select(".quota")
+    .style("display", function(d) {
+      return d.data.quota ? "block" : "none";
+    });
+
+  foreignObjectUpdate
+    .select(".children-button")
+    .style("display", function(d) {
+      return d.children || d._children ? "block" : "none";
+    });
+
+  const nodeExit = node
+    .exit()
+    .transition()
+    .duration(duration)
+    .style("opacity", 0)
+    .attr("transform", function(d) {
+      if (left_to_right) {
+        return "translate(" + source.y + "," + source.x + ")";
+      } else {
+        return "translate(" + source.x + "," + source.y + ")";
+      }
+    })
+    .remove();
+
+  const link = svg_group.selectAll("path.link").data(links, function(d) {
+    return d.id;
+  });
+  const linkEnter = link
+    .enter()
+    .insert("path", "g")
+    .style("opacity", 0)
+    .attr("class", "link")
+    .attr("d", function(d) {
+      return diagonal(source, source);
+    });
+
+  const linkUpdate = linkEnter.merge(link);
+
+  linkUpdate
+    .transition()
+    .duration(duration)
+    .style("opacity", 1)
+    .style("display", function(d) {
+      return d.depth === 1 ? "none" : "block";
+    })
+    .attr("d", function(d) {
+      return diagonal(d, d.parent);
+    })
+    .style("stroke", function(d) {
+      return d.parent?.color ? d.parent?.color : "gray";
+    });
+
+  const linkExit = link
+    .exit()
+    .transition()
+    .duration(duration)
+    .style("opacity", 0)
+    .attr("d", function(d) {
+      return diagonal(source, source);
+    })
+    .remove();
+  function diagonal(s, d) {
+    let path
+
+    if (left_to_right) {
+      const i = {
+        x: s.x + node_height/2,
+        y: s.y
+      }
+      const f = {
+        x: d.x + node_height/2,
+        y: d.y + node_width
+      }
+      path = `M ${i.y},${i.x}  C ${(i.y+f.y)/2},${i.x}  ${(i.y+f.y)/2},${f.x}  ${f.y},${f.x}`;
+    } else {
+      const i = {
+        x: s.x + node_width/2,
+        y: s.y
+      }
+      const f = {
+        x: d.x + node_width/2,
+        y: d.y + node_height
+      }
+      path = `M ${i.x},${i.y}  C ${i.x},${(i.y+f.y)/2}  ${f.x},${(i.y+f.y)/2}  ${f.x},${f.y}`;
+    }
+
+    return path;
+  }
+  function num_to_color(num) {
+    if (num < 0 || num > 1) {
+      return "gold"
+    }
+    const color_limit = 255
+    return "#" + [
+        Math.floor(color_limit / 2 * (Math.sin((num      ) * 2*Math.PI) + 1)),
+        Math.floor(color_limit / 2 * (Math.sin((num + 1/3) * 2*Math.PI) + 1)),
+        Math.floor(color_limit / 2 * (Math.sin((num + 2/3) * 2*Math.PI) + 1))
+      ].map(num => {
+        const hex = num.toString(16)
+        return hex.length === 1 ? '0' + hex : hex
+      }).join('')
+  }
+}
+
+const hierarchy = {
+  name: "Namespaces",
+  children: []
+}
+
+const objects_sse = new EventSource('/api/get/objects')
+objects_sse.addEventListener('message', function(event) {
+  let event_obj
+  try {
+    event_obj = JSON.parse(event.data)
+  } catch(err) {
+    console.log('failed parsing event: ' + event.data)
+  }
+  if (event_obj) {
+    update_obj(event_obj)
+  }
+})
+
+root = d3.hierarchy(hierarchy);
+
+function findNode(node, ns_name) {
+  if (node.data.name == ns_name) {
+    return node
+  } else if (node.children || node._children) {
+    let found_node
+    const children = node.children ? node.children : node._children
+    children.forEach(node => {
+      const child_node = findNode(node, ns_name)
+      if (child_node) {
+        found_node = child_node
+      }
+    })
+    if (found_node) {
+      return found_node
+    }
+  }
+}
+
+// retry getting the node, useful when the node is still not created yet
+async function findNodeRetries(node, ns_name) {
+  let found_node = findNode(node, ns_name)
+
+  let attempts = 40
+  const timeout = 100
+  while (!found_node) {
+    await new Promise(r => setTimeout(r, timeout))
+    found_node = findNode(node, ns_name)
+
+    attempts--
+    if (attempts < 0) {
+      return undefined
+    }
+  }
+  return found_node
+}
+
+function remove_ns_from_tree(ns_name) {
+  const ns_node = findNode(root, ns_name)
+  if (!ns_node) {
+    return undefined
+  }
+  const parent = ns_node.parent
+  if (parent.children) {
+    parent.children = parent.children.filter(node => node.data.name != ns_name)
+    if (parent.children.length === 0) {
+      parent.children = null
+    }
+  } else {
+    parent._children = parent._children.filter(node => node.data.name != ns_name)
+    if (parent._children.length === 0) {
+      parent._children = null
+    }
+  }
+  parent.data.children = parent.data.children.filter(node => node.name != ns_name)
+  update(parent)
+  return ns_node
+}
+
+async function add_ns_to_tree(node, parent_name) {
+  let parent = await findNodeRetries(root, parent_name)
+
+  // sorted childrent push
+  let index = 0
+  let children
+  if (parent.children) {
+    for (;index < parent.children.length; index++) {
+      if (parent.children[index].data.name.localeCompare(node.data.name, undefined, { numeric: true}) == 1) {
+        break
+      }
+    }
+    parent.children.splice(index, 0, node)
+  } else if (parent._children) {
+    for (;index < parent._children.length; index++) {
+      if (parent._children[index].data.name.localeCompare(node.data.name, undefined, { numeric: true}) == 1) {
+        break
+      }
+    }
+    parent._children.splice(index, 0, node)
+  } else {
+    parent.children = [ node ]
+  }
+
+  // sorted children data push
+  let data_children
+  if (parent.data.children) {
+    parent.data.children.splice(index, 0, node.data)
+  } else {
+    parent.data.children = [ node.data ]
+  }
+  
+  // basic node configs
+  node.depth = parent.depth + 1
+  node.height = parent.height - 1
+  node.parent = parent
+
+  update(parent)
+}
+
+function create_node(ns_name) {
+  return d3.hierarchy({
+    name: ns_name,
+    _children: []
+  })
+}
+
+document.getElementById("create-ns").addEventListener("click",function () {
+  const ns_name = prompt("what is the namespace name?")
+  if (ns_name) {
+    opts = {
+      method: 'POST',
+      headers: {
+        'ns-name': ns_name
+      }
+    }
+    if (selected_ns?.data?.name) {
+      opts.headers['parent-ns'] = selected_ns.data.name
+    }
+    fetch('/api/create/ns', opts)
+      .then(res => {
+        if (res.ok) {
+          return res.text()
+        } else {
+          return res.text().then(text => {throw new Error(text)})
+        }
+      })
+      .then(msg => console.log(msg))
+      .catch(error => {
+        console.error(error)
+        alert("ERROR:" + error)
+      });
+  }
+})
+document.getElementById("create-subns").addEventListener("click",function () {
+  const ns_name = prompt("what is the namespace name?")
+  if (ns_name) {
+    opts = {
+      method: 'POST',
+      headers: {
+        'ns-name': ns_name,
+        'parent-ns': selected_ns.data.name
+      }
+    }
+    fetch('/api/create/sub-ns', opts)
+      .then(res => {
+        if (res.ok) {
+          return res.text()
+        } else {
+          return res.text().then(text => {throw new Error(text)})
+        }
+      })
+      .then(msg => console.log(msg))
+      .catch(error => {
+        console.error(error)
+        alert("ERROR:" + error)
+      });
+  }
+})
+document.getElementById("delete-ns").addEventListener("click",function () {
+  const ns_name = selected_ns.data.name
+  if (confirm(`Are you sure that you want to delete namespace '${ns_name}'`)) {
+    const opts = {
+      method: 'DELETE',
+      headers: {
+        'ns-name': ns_name
+      }
+    }
+    fetch('/api/delete/ns', opts)
+      .then(res => {
+        if (res.ok) {
+          return res.text()
+        } else {
+          return res.text().then(text => {throw new Error(text)})
+        }
+      })
+      .then(msg => console.log(msg))
+      .catch(error => {
+        console.error(error)
+        alert("ERROR:" + error)
+      });
+  }
+})
+
+function parent_from_ns_label(ns) {
+  let parent
+  Object.keys(ns.metadata.labels).forEach(label_name => {
+    if (label_name.includes(".tree.hnc.x-k8s.io/depth") && ns.metadata.labels[label_name] === "1") {
+      parent = label_name.substring(0, label_name.indexOf("."))
+    }
+  })
+  return parent
+}
+
+function update_obj(obj_update) {
+  if (obj_update.object.kind === 'Namespace') {
+    update_namespace(obj_update)
+  } else if (obj_update.object.kind === 'HierarchicalResourceQuota') {
+    update_hrq(obj_update)
+  } else if (obj_update.object.kind === 'ResourceQuota') {
+    update_quota(obj_update)
+  } else {
+    console.log('unknown type: ' + obj_update.object.kind)
+  }
+}
+
+let got_first_ns = false
+svg.style('opacity', 0)
+function update_namespace(obj_update) {
+  if (obj_update.type === 'MODIFIED' || obj_update.type === 'ADDED') {
+    const ns_name = obj_update.object.metadata.name
+    let parent = parent_from_ns_label(obj_update.object)
+    if (!parent) {
+      parent = "Namespaces"
+    }
+
+    let node = remove_ns_from_tree(ns_name)
+
+    // if node didnt existed then create it
+    if (!node) {
+      const node = create_node(ns_name)
+      node.data.annotations = obj_update.object.metadata.annotations;
+      node.data.labels = obj_update.object.metadata.labels;
+      node.data.is_subnamespace = obj_update.object.metadata.annotations?.["hnc.x-k8s.io/subnamespace-of"] !== undefined ? true : false;
+    }
+
+    // if namespace is terminating
+    if (obj_update.object.metadata.deletionTimestamp) {
+      node.data.terminating = true
+    }
+
+    add_ns_to_tree(node, parent)
+
+    if (!got_first_ns) {
+      setTimeout(() => {
+        zoom_to_tree(0)
+        got_first_ns = true
+        svg
+          .transition()
+          .duration(200)
+          .style('opacity', 1)
+      }, duration)
+    }
+  } else if (obj_update.type === 'DELETED') {
+    remove_ns_from_tree(obj_update.object.metadata.name)
+  } else {
+    console.log("unhandled ns update type: ", obj_update.type)
+  }
+}
+
+async function update_hrq(obj_update) {
+  const ns_name = obj_update.object.metadata.namespace
+  const node = await findNodeRetries(root, ns_name)
+  if (obj_update.type === 'ADDED' || obj_update.type === 'MODIFIED') {
+    node.data.quota = obj_update.object
+  } else if (obj_update.type === 'DELETED') {
+    node.data.quota = undefined
+  } else {
+    console.log("unhandled hrq update type: ", obj_update.type)
+  }
+  update(node)
+  if (selected_ns?.data?.name === ns_name) {
+    update_right_bar_text();
+  }
+}
+
+async function update_quota(obj_update) {
+  const ns_name = obj_update.object.metadata.namespace
+  const node = await findNodeRetries(root, ns_name)
+  if (obj_update.type === 'ADDED' || obj_update.type === 'MODIFIED') {
+    node.data.usage = obj_update.object
+  } else if (obj_update.type === 'DELETED') {
+    node.data.usage = undefined
+  } else {
+    console.log("unhandled quota update type: ", obj_update.type)
+  }
+  update(node)
+  if (selected_ns?.data?.name === ns_name) {
+    update_right_bar_text();
+  }
+}
+    </script>
+  </body>
+</html>

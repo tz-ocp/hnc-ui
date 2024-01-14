@@ -1,0 +1,5 @@
+{{ with (.Values.openshift | ternary .Values.ocp .Values.k8s) }}
+{{ .extra }}
+---
+{{ .extra2 }}
+{{ end }}

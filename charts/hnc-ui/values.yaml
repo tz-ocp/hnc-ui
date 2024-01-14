@@ -1,0 +1,113 @@
+# wether to use ocp values
+openshift: false
+
+k8s:
+  ingress:
+    # Must specify host
+    host: hnc.apps.test
+    annotations: {}
+
+  volumes:
+  - name: hnc-htpasswd
+    secret:
+      secretName: hnc-htpasswd
+  - name: hnc-user-config
+    secret:
+      secretName: hnc-user-config
+
+  hnc_ui:
+    image: null # degault is ghcr.io/zfrhv/hnc-ui:{{ .Chart.Version }}
+    env:
+    - name: USE_SA_TOKEN
+      value: "true"
+    
+  auth_proxy:
+    image: nginx:1.19.3
+    env: []
+    envFrom: []
+    volumeMounts:
+    - mountPath: /etc/htpasswd
+      name: hnc-htpasswd
+    - mountPath: /etc/nginx/nginx.conf
+      subPath: nginx.conf
+      name: hnc-user-config
+  
+  extra: |
+    --- # use kubernetes secret generator to generate cookies-secret
+    apiVersion: v1
+    kind: Secret
+    type: Opaque
+    metadata:
+      name: hnc-user-config
+      namespace: hnc-ui
+    stringData:
+      nginx.conf: |
+        events {
+        }
+        http {
+          server {
+            listen 8443;
+            auth_basic "Admin user";
+            auth_basic_user_file /etc/htpasswd/admin;
+            location / {
+              proxy_pass http://localhost:8080;
+            }
+            location /icon.png {
+              auth_basic off;
+              proxy_pass http://localhost:8080;
+            }
+          }
+        }
+    --- # configure local user
+    apiVersion: v1
+    kind: Secret
+    type: Opaque
+    metadata:
+      name: hnc-htpasswd
+      namespace: hnc-ui
+    stringData:
+      admin: admin:$2y$05$RuehTO58mJK57WKfAyDUkud.ZEHb626G.rj7SHGleAXNtB8lw7GKq # user admin:admin
+    --- # give the serviceAccount more permissions
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    metadata:
+      name: hnc-ui-extra
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: cluster-admin
+    subjects:
+    - kind: ServiceAccount
+      name: hnc-ui
+      namespace: hnc-ui
+
+ocp:
+  cookie_secret: "mdPKpWCTIjqNEsCAJruumCugRWiMVLIB"
+  client_secret: "mdPKpWCTIjqNEsCAJruumCugRWiMVLIB" # OAuthClient cant load from secret, so needs to be specified manually.
+
+  ingress:
+    # Must specify host
+    host: hnc.apps.test
+
+  volumes:
+  - name: hnc-tls
+    secret:
+      secretName: hnc-tls
+
+  hnc_ui:
+    image: null # degault is ghcr.io/zfrhv/hnc-ui:{{ .Chart.Version }}
+    env:
+    - name: USE_SA_TOKEN
+      value: "false"
+    - name: LOGOUT_PATH
+      value: "/oauth/sign_out"
+
+  auth_proxy:
+    image: ocp4/openshift4:4.10.26-x86_64-oauth-proxy
+    env: []
+    envFrom: []
+    volumeMounts:
+    - name: hnc-tls
+      mountPath: /etc/tls/private
+
+  extra: ""

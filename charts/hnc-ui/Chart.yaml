@@ -1,0 +1,5 @@
+apiVersion: v2
+name: hnc-ui
+description: Friendly user interface for HierarchicalNamespcaeController
+type: application
+version: "0.1"
