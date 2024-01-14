@@ -1,0 +1,60 @@
+k8s:
+  ingress:
+    host: hnc.apps.test.k8s
+    annotations:
+      nginx.ingress.kubernetes.io/backend-protocol: HTTPS
+  volumes:
+  - name: hnc-tls
+    secret:
+      secretName: hnc-tls
+
+  hnc_ui:
+    env: []
+
+  auth_proxy:
+    image: oauth2-proxy/oauth2-proxy:v7.4.0-amd64
+    envFrom:
+    - secretRef:
+        name: hnc-user-config
+    volumeMounts:
+    - mountPath: /etc/tls/private
+      name: hnc-tls
+
+  extra: |
+    --- # use kubernetes secret generator to generate cookies-secret
+    apiVersion: v1
+    kind: Secret
+    type: Opaque
+    metadata:
+      name: hnc-user-config
+      namespace: hnc-ui
+      annotations:
+        secret-generator.v1.mittwald.de/length: "32"
+        secret-generator.v1.mittwald.de/autogenerate: OAUTH2_PROXY_COOKIE_SECRET
+    stringData:
+      OAUTH2_PROXY_COOKIE_REFRESH: 100m
+      OAUTH2_PROXY_COOKIE_EXPIRE: 200m
+      OAUTH2_PROXY_CLIENT_ID: k8s
+      OAUTH2_PROXY_CLIENT_SECRET: "empty"
+      OAUTH2_PROXY_SSL_INSECURE_SKIP_VERIFY: "true"
+      OAUTH2_PROXY_PROVIDER: keycloak
+      OAUTH2_PROXY_LOGIN_URL: https://kc.apps.test.k8s/realms/k8s/protocol/openid-connect/auth
+      OAUTH2_PROXY_REDEEM_URL: https://kc.apps.test.k8s/realms/k8s/protocol/openid-connect/token
+      OAUTH2_PROXY_PROFILE_URL: https://kc.apps.test.k8s/realms/k8s/protocol/openid-connect/userinfo
+      OAUTH2_PROXY_VALIDATE_URL: https://kc.apps.test.k8s/realms/k8s/protocol/openid-connect/userinfo
+      OAUTH2_PROXY_TLS_CERT_FILE: /etc/tls/private/tls.crt
+      OAUTH2_PROXY_TLS_KEY_FILE: /etc/tls/private/tls.key
+    --- # use cert manager to sign the pod certificate
+    apiVersion: cert-manager.io/v1
+    kind: Certificate
+    metadata:
+      name: hnc-tls
+      namespace: hnc-ui
+    spec:
+      secretName: hnc-tls
+      commonName: hnc.apps.test
+      dnsNames:
+        - hnc.apps.test
+      issuerRef:
+        name: local-cluster
+        kind: ClusterIssuer

@@ -1,0 +1,42 @@
+{{ if .Values.openshift -}}
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: web
+  namespace: hnc-ui
+spec:
+  host: {{ .Values.ocp.ingress.host }}
+  port:
+    targetPort: web
+  tls:
+    insecureEdgeTerminationPolicy: Redirect
+    termination: reencrypt
+  to:
+    kind: Service
+    name: hnc-ui
+    weight: 100
+  wildcardPolicy: None
+{{- else -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+{{ .Values.k8s.ingress.annotations | toYaml | indent 4 }}
+  name: web
+  namespace: hnc-ui
+spec:
+  rules:
+  - host: {{ .Values.k8s.ingress.host }}
+    http:
+      paths:
+      - backend:
+          service:
+            name: hnc-ui
+            port:
+              number: 443
+        path: /
+        pathType: ImplementationSpecific
+  tls:
+  - hosts:
+    - {{ .Values.k8s.ingress.host }}
+{{- end }}
