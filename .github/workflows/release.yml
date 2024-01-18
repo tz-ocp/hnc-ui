@@ -4,17 +4,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  main:
-    runs-on: ubuntu-latest
-
-    steps:
-
-      - name: Trigger Release Helm Chart Workflow
-        uses: actions/workflow-dispatch@v2
-        with:
-          workflow: "Release Charts"
-
-      - name: Trigger Build Image Workflow
-        uses: actions/workflow-dispatch@v2
-        with:
-          workflow: "Release Images"
+  release-chart:
+    uses: zfrhv/hnc-ui/.github/workflows/helm-build.yml@main
+  release-image:
+    uses: zfrhv/hnc-ui/.github/workflows/docker-image.yml@main
