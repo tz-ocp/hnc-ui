@@ -22,4 +22,3 @@ jobs:
     uses: zfrhv/hnc-ui/.github/workflows/docker-image.yml@main
     with:
       version: ${{ inputs.version }}
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
