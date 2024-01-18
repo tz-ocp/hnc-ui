@@ -16,7 +16,7 @@ k8s:
       secretName: hnc-user-config
 
   hnc_ui:
-    image: zfrhv/hnc-ui:0.1
+    image: ghcr.io/zfrhv/hnc-ui:0.1
     env:
     - name: USE_SA_TOKEN
       value: "true"
@@ -93,7 +93,7 @@ ocp:
       secretName: hnc-tls
 
   hnc_ui:
-    image: zfrhv/hnc-ui:0.1
+    image: ghcr.io/zfrhv/hnc-ui:0.1
     env:
     - name: USE_SA_TOKEN
       value: "false"
