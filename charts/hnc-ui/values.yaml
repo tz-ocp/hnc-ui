@@ -28,7 +28,7 @@ k8s:
     volumeMounts:
     - mountPath: /etc/htpasswd
       name: hnc-htpasswd
-    - mountPath: /etc/nginx
+    - mountPath: /etc/nginx/conf.d
       name: hnc-user-config
   
   extra: |
@@ -40,7 +40,7 @@ k8s:
       name: hnc-user-config
       namespace: hnc-ui
     stringData:
-      nginx.conf: |
+      default.conf: |
         events {
         }
         http {
