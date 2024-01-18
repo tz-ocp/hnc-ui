@@ -8,12 +8,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Trigger Build Image Workflow
-        uses: actions/workflow-dispatch@v2
-        with:
-          workflow: "Release Images"
 
       - name: Trigger Release Helm Chart Workflow
         uses: actions/workflow-dispatch@v2
         with:
           workflow: "Release Charts"
+
+      - name: Trigger Build Image Workflow
+        uses: actions/workflow-dispatch@v2
+        with:
+          workflow: "Release Images"
