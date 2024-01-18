@@ -1,3 +1,6 @@
+# Intro
+UI for [hierarchical namespaces in kubernetes](https://github.com/kubernetes-sigs/hierarchical-namespaces)
+
 # Usage
 ```bash
 helm repo add hnc-ui https://zfrhv.github.io/hnc-ui
@@ -17,3 +20,6 @@ The tree diagram is made with `d3.js`.
 # Example pictures:
 ![hnc example 1 image](docs/hnc.png)
 ![hnc example 2 image](docs/hnc2.png)
+
+You can easily view and manage your namespaces by simply right clicking!  
+Live updates by using kubernetes watch!
