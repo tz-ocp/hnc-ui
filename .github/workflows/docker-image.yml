@@ -2,6 +2,11 @@ name: Release Images
 
 on:
   workflow_call:
+    inputs:
+      version:
+        type: string
+        description: New release version
+        required: true
 
 jobs:
   push_to_registries:
