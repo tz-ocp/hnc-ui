@@ -54,6 +54,7 @@ k8s:
             }
             location /icon.png {
               auth_basic off;
+              proxy_pass http://localhost:8080;
             }
           }
         }
