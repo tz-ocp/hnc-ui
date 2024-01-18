@@ -1,3 +1,7 @@
+# TODO
+replace the chart version based on github tag
+think how to implement image "minimal"
+
 # Concept
 ### Basic workflow
 1. The hnc-ui watches for namespaces that is included by hnc (via label `hnc.x-k8s.io/included-namespace: "true"`) with its service account token.
