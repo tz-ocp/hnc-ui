@@ -2,14 +2,23 @@ name: Release All
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        type: string
+        description: New release version
+        required: true
 
 jobs:
   release-chart:
     permissions:
       contents: write
     uses: zfrhv/hnc-ui/.github/workflows/helm-build.yml@main
+    with:
+      version: ${{ inputs.version }}
   release-image:
     permissions:
       packages: write
       contents: read
     uses: zfrhv/hnc-ui/.github/workflows/docker-image.yml@main
+    with:
+      version: ${{ inputs.version }}
