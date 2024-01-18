@@ -1,6 +1,6 @@
 {
   "name": "hnc-ui",
-  "version": "0.1",
+  "version": "*",
   "description": "Friendly user interface for HierarchicalNamespcaeController",
   "main": "index.js",
   "author": "Zahar Pecherichny",
