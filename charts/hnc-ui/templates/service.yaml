@@ -11,7 +11,7 @@ spec:
   type: ClusterIP
   ports:
   - name: web
-    port: 443
+    port: 8443
     protocol: TCP
     targetPort: web
   selector:
