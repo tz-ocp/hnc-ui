@@ -31,7 +31,7 @@ jobs:
 
       - name: Update chart version
         run: |
-          sed -i -r "s/version: .*/version: ${{ inputs.version }}/g"
+          sed -i -r "s/version: .*/version: ${{ inputs.version }}/g" charts/hnc-ui/Chart.yaml
 
       - name: Run chart-releaser
         uses: helm/chart-releaser-action@v1.6.0
