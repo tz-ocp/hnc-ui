@@ -1,6 +1,6 @@
-# TODO
-replace the chart version based on github tag
-think how to implement image "minimal"
+# Usage
+helm repo add hnc-ui https://zfrhv.github.io/hnc-ui  
+helm install test hnc-ui/hnc-ui
 
 # Concept
 ### Basic workflow
