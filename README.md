@@ -4,7 +4,7 @@ UI for [hierarchical namespaces in kubernetes](https://github.com/kubernetes-sig
 # Usage
 ```bash
 helm repo add hnc-ui https://zfrhv.github.io/hnc-ui
-helm install k8s-hnc-ui -n hnc-ui --create-namespace hnc-ui/hnc-ui
+helm install k8s-hnc-ui -n hnc-ui --create-namespace --set k8s.ingress.host=hnc.test hnc-ui/hnc-ui
 ```
 
 # Concept
