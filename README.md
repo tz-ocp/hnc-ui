@@ -1,6 +1,8 @@
 # Usage
-helm repo add hnc-ui https://zfrhv.github.io/hnc-ui  
+```bash
+helm repo add hnc-ui https://zfrhv.github.io/hnc-ui
 helm install k8s-hnc-ui -n hnc-ui --create-namespace hnc-ui/hnc-ui
+```
 
 # Concept
 ### Basic workflow
