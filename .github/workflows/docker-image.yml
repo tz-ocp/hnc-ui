@@ -31,5 +31,4 @@ jobs:
         with:
           context: image
           push: true
-          tags: zfrhv/hnc-ui:${{ input.version }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: zfrhv/hnc-ui:${{ inputs.version }}
