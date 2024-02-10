@@ -9,7 +9,18 @@
 
     <div id="top-bar" style="height: 40px; width: 100%; background-color: #1e2e54;">
       <a href="kubectl-hns_linux_amd64" download style="float: left; margin: 10px; color: #caad5b;">Download CLI tool</a>
-      <a href="oauth2/sign_out" style="float: right; margin: 10px; color: #cfd3e3;">Logout</a>
+      <a href="logout" style="float: right; margin: 10px; color: #cfd3e3;">Logout</a>
+      <div id="username" style="float: right; margin: 10px; color: #cfd3e3;"></div>
+      <script id="get-username">
+        fetch('/api/get/username').then(res => {
+          return res.text()
+        }).then(username => {
+          document.getElementById('username').innerText = username
+        }).catch(err => {
+          console.log(err)
+          document.getElementById('username').innerText = "unknown_username"
+        })
+      </script>
     </div>
 
     <div style="width: 100%; height: calc(100% - 40px); position: relative; font-family: cursive;">
@@ -307,14 +318,22 @@ function update_right_bar_text() {
 
 function quota_to_string(quota) {
   if (quota) {
-    return Object.keys(quota.spec.hard).map(key => `${key}: ${quota.status.used[key]}/${quota.spec.hard[key]}`).join('<br>')
+    if (quota.message) {
+      return quota.message
+    } else {
+      return Object.keys(quota.spec.hard).map(key => `${key}: ${quota.status.used[key]}/${quota.spec.hard[key]}`).join('<br>')
+    }
   } else {
     return "None"
   }
 }
 function usage_to_string(usage) {
   if (usage) {
-    return Object.keys(usage).map(key => `${key}: ${usage[key]}`).join('<br>')
+    if (usage.message) {
+      return usage.message
+    } else {
+      return Object.keys(usage.status.used).map(key => `${key}: ${usage.status.used[key]}`).join('<br>')
+    }
   } else {
     return "Unknown (need to create quota to be able to know)"
   }
@@ -675,6 +694,24 @@ function findNode(node, ns_name) {
   }
 }
 
+// retry getting the node, useful when the node is still not created yet
+async function findNodeRetries(node, ns_name) {
+  let found_node = findNode(node, ns_name)
+
+  let attempts = 40
+  const timeout = 100
+  while (!found_node) {
+    await new Promise(r => setTimeout(r, timeout))
+    found_node = findNode(node, ns_name)
+
+    attempts--
+    if (attempts < 0) {
+      return undefined
+    }
+  }
+  return found_node
+}
+
 function remove_ns_from_tree(ns_name) {
   const ns_node = findNode(root, ns_name)
   if (!ns_node) {
@@ -698,19 +735,7 @@ function remove_ns_from_tree(ns_name) {
 }
 
 async function add_ns_to_tree(node, parent_name) {
-  let parent= findNode(root, parent_name)
-  
-  let attempts = 0
-  while (!parent) {
-    await new Promise(r => setTimeout(r, 100))
-    parent = findNode(root, parent_name)
-
-    attempts++
-    if (attempts > 40) {
-      throw new Error(`failed retrying 20 times during ${40*0.1} seconds to find node ${parent_name}`)
-    }
-  }
-
+  let parent = await findNodeRetries(root, parent_name)
 
   // sorted childrent push
   let index = 0
@@ -858,21 +883,29 @@ function update_obj(obj_update) {
 let got_first_ns = false
 svg.style('opacity', 0)
 function update_namespace(obj_update) {
-  if (obj_update.type === 'ADDED') {
+  if (obj_update.type === 'MODIFIED' || obj_update.type === 'ADDED') {
     const ns_name = obj_update.object.metadata.name
     let parent = parent_from_ns_label(obj_update.object)
     if (!parent) {
       parent = "Namespaces"
     }
 
-    const node = findNode(root, ns_name)
+    let node = remove_ns_from_tree(ns_name)
+
+    // if node didnt existed then create it
     if (!node) {
-      const new_node = create_node(ns_name)
-      new_node.data.annotations = obj_update.object.metadata.annotations;
-      new_node.data.labels = obj_update.object.metadata.labels;
-      new_node.data.is_subnamespace = obj_update.object.metadata.annotations?.["hnc.x-k8s.io/subnamespace-of"] !== undefined ? true : false;
-      add_ns_to_tree(new_node, parent)
+      const node = create_node(ns_name)
+      node.data.annotations = obj_update.object.metadata.annotations;
+      node.data.labels = obj_update.object.metadata.labels;
+      node.data.is_subnamespace = obj_update.object.metadata.annotations?.["hnc.x-k8s.io/subnamespace-of"] !== undefined ? true : false;
     }
+
+    // if namespace is terminating
+    if (obj_update.object.metadata.deletionTimestamp) {
+      node.data.terminating = true
+    }
+
+    add_ns_to_tree(node, parent)
 
     if (!got_first_ns) {
       setTimeout(() => {
@@ -884,19 +917,6 @@ function update_namespace(obj_update) {
           .style('opacity', 1)
       }, duration)
     }
-  } else if (obj_update.type === 'MODIFIED') {
-    const ns_name = obj_update.object.metadata.name
-    let parent = parent_from_ns_label(obj_update.object)
-    if (!parent) {
-      parent = "Namespaces"
-    }
-    let node = remove_ns_from_tree(ns_name)
-    // if namespace is terminating
-    if (obj_update.object.metadata.deletionTimestamp) {
-      node.data.terminating = true
-    }
-    add_ns_to_tree(node, parent)
-
   } else if (obj_update.type === 'DELETED') {
     remove_ns_from_tree(obj_update.object.metadata.name)
   } else {
@@ -904,9 +924,9 @@ function update_namespace(obj_update) {
   }
 }
 
-function update_hrq(obj_update) {
+async function update_hrq(obj_update) {
   const ns_name = obj_update.object.metadata.namespace
-  const node = findNode(root, ns_name)
+  const node = await findNodeRetries(root, ns_name)
   if (obj_update.type === 'ADDED' || obj_update.type === 'MODIFIED') {
     node.data.quota = obj_update.object
   } else if (obj_update.type === 'DELETED') {
@@ -920,11 +940,11 @@ function update_hrq(obj_update) {
   }
 }
 
-function update_quota(obj_update) {
+async function update_quota(obj_update) {
   const ns_name = obj_update.object.metadata.namespace
-  const node = findNode(root, ns_name)
+  const node = await findNodeRetries(root, ns_name)
   if (obj_update.type === 'ADDED' || obj_update.type === 'MODIFIED') {
-    node.data.usage = obj_update.object.status.used
+    node.data.usage = obj_update.object
   } else if (obj_update.type === 'DELETED') {
     node.data.usage = undefined
   } else {

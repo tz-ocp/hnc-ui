@@ -99,6 +99,8 @@ ocp:
     env:
     - name: USE_SA_TOKEN
       value: "false"
+    - name: LOGOUT_PATH
+      value: "/oauth/sign_out"
 
   auth_proxy:
     image: ocp4/openshift4:4.10.26-x86_64-oauth-proxy

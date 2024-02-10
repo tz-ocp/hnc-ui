@@ -68,7 +68,7 @@ class k8s {
     }, res => {
       if (res.statusCode != 200) {
         if (500 > res.statusCode && res.statusCode >= 400) {
-          watch_reject(new Error(`watching '${url.toString()}' failed, the return code was '${res.statusCode}'. try logging out or cleaning the cookies?`))
+          watch_reject(new Error(`watching '${url.toString()}' failed, the return code was '${res.statusCode}'`))
         } else {
           watch_reject(new Error(`watching '${url.toString()}' failed, the return code isnt 200: '${res.statusCode}'`))
         }
@@ -76,42 +76,42 @@ class k8s {
         if (run_after_connected) {
           run_after_connected()
         }
-      }
-      res.setEncoding('utf8')
-      let buffer = ""
-      res.on('data', chunk => {
-        buffer += chunk
-        const events = buffer.split('\n')
-        events.forEach((event, index) => {
-          let event_obj
-          try {
-            // try parsing event to object
-            event_obj = JSON.parse(event)
-          } catch(err) {
-            // if not last event then something broken inside the objects
-            if (index != events.length-1) {
-              throw err
+        res.setEncoding('utf8')
+        let buffer = ""
+        res.on('data', chunk => {
+          buffer += chunk
+          const events = buffer.split('\n')
+          events.forEach((event, index) => {
+            let event_obj
+            try {
+              // try parsing event to object
+              event_obj = JSON.parse(event)
+            } catch(err) {
+              // if not last event then something broken inside the objects
+              if (index != events.length-1) {
+                throw err
+              }
             }
-          }
-
-          // forward the event if succesfully parsed
-          if (event_obj) {
-            use_event(event_obj)
-          }
-
-          // after last even reset the buffer
-          if (index == events.length-1) {
+  
+            // forward the event if succesfully parsed
             if (event_obj) {
-              buffer = ""
-            } else {
-              buffer = event
+              use_event(event_obj)
             }
-          }
+  
+            // after last even reset the buffer
+            if (index == events.length - 1) {
+              if (event_obj) {
+                buffer = ""
+              } else {
+                buffer = event
+              }
+            }
+          })
         })
-      })
-      res.on('end', () => {
-        watch_resolve()
-      })
+        res.on('end', () => {
+          watch_resolve()
+        })
+      }
     })
 
     req.on('error', err => {
@@ -170,12 +170,17 @@ class k8s {
 
   verbose_error(err, url, object) {
     let msg
+    let statusCode
     if (err.response?.data?.message) {
       msg = err.response.data.message
+      statusCode = err.response.data.code
     } else {
       msg = err.message
     }
-    throw new Error(`${msg}\nThe attempted url was: '${url}'\nThe attempted object was:\n${JSON.stringify(object)}`)
+
+    const new_err = new Error(`${msg}\nThe attempted url was: '${url}'\nThe attempted object was:\n${JSON.stringify(object)}`)
+    new_err.statusCode = statusCode
+    throw new_err
   }
 }
 

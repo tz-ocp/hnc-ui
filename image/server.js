@@ -13,6 +13,10 @@ const k8s = require('./k8s')
 
 const sa_k8s_api = new k8s(fs.readFileSync('/var/run/secrets/kubernetes.io/serviceaccount/token'))
 
+app.get('/logout', (req, res) => {
+  res.redirect(301, process.env.LOGOUT_PATH)
+})
+
 // verbose user info for every request
 app.use(function (req,res,next) {
   if (process.env.USE_SA_TOKEN == "true") {
@@ -54,6 +58,9 @@ function handle_error(err, res) {
   }
 }
 
+app.get('/api/get/username', (req, res) => {
+  res.end(req.user)
+})
 
 async function user_watch_quota(req, res, ns_name) {
   const quota = {
@@ -74,6 +81,18 @@ async function user_watch_quota(req, res, ns_name) {
         res.write(`data: ${JSON.stringify(event)}\n\n`)
       })
     }
+  })
+  .catch(err => {
+    res.write(`data: ${JSON.stringify({
+      type: "ADDED",
+      object: {
+        kind: 'ResourceQuota',
+        metadata: {
+          namespace: ns_name
+        },
+        message: `couldnt watch hrq on namespace '${ns_name}', error: ${err.message}`
+      }
+    })}\n\n`)
   })
 }
 
@@ -97,10 +116,22 @@ async function user_watch_hrq(req, res, ns_name) {
       })
     }
   })
+  .catch(err => {
+    res.write(`data: ${JSON.stringify({
+      type: "ADDED",
+      object: {
+        kind: 'HierarchicalResourceQuota',
+        metadata: {
+          namespace: ns_name
+        },
+        message: `couldnt watch quota on namespace '${ns_name}', error: ${err.message}`
+      }
+    })}\n\n`)
+  })
 }
 
-async function user_watch_ns(req, res, ns_name) {
-  const ns = {
+async function user_check_ns(req, res, ns_name) {
+  const ns_template = {
     apiVersion: 'v1',
     kind: 'Namespace',
     metadata: {
@@ -108,26 +139,22 @@ async function user_watch_ns(req, res, ns_name) {
     }
   }
   
-  // watch the namespace
-  await req.k8s_api.watch(ns, event => {
-    res.write(`data: ${JSON.stringify(event)}\n\n`)
-  }, () => { // if watching namespace succeeded
+  await req.k8s_api.get(ns_template)
+  .then(ns => {
+    res.write(`data: ${JSON.stringify({
+      type: "MODIFIED",
+      object: ns
+    })}\n\n`)
+
     // watch quotas + hrqs
     user_watch_quota(req, res, ns_name)
     user_watch_hrq(req, res, ns_name)
   })
-  .catch(err => { // if watching namespace failed
-    res.end(`data: ${err.message}\n\n`)
-  })
-  .then(async () => { // after first watching sucesfully ended
-    // keep restart watch namespaces when timed out
-    while (true) {
-      await req.k8s_api.watch(ns, event => {
-        res.write(`data: ${JSON.stringify(event)}\n\n`)
-      }).catch(err => {
-        res.end(`data: ${err.message}\n\n`)
-      })
-    }
+  .catch(err => {
+    res.write(`data: ${JSON.stringify({
+      type: "DELETED",
+      object: ns_template
+    })}\n\n`)
   })
 }
 
@@ -143,26 +170,35 @@ app.get("/api/get/objects", async (req, res) => {
   }, 1000*20)
 
   // timeout after 5 min for permission updates + avoid bugs
-  const close_con = setTimeout(() => {
-    delete ns_clients[req.user.name]
+  const close_con_timeout = setTimeout(close_con, 1000*60*5)
+  function close_con() {
+    delete ns_clients[req.connection_id]
     clearInterval(heartbeats)
+    clearTimeout(close_con_timeout)
     res.end()
-  }, 1000*60*5 )
-
-  ns_clients[req.user.name] = ns_name => {
-    user_watch_ns(req, res, ns_name)
   }
 
-  Object.keys(ns_cache).forEach(ns_name => {
-    user_watch_ns(req, res, ns_name)
-  })
+  // subscribe the user for namespaces updates
+  user_sub_watch(req, res)
 
-  req.on('close', () => {
-    delete ns_clients[req.user.name]
-    clearInterval(heartbeats)
-    clearTimeout(close_con)
-  })
+  req.on('close', close_con)
 })
+
+function user_sub_watch(req, res) {
+  // give this connection an id
+  do {
+    req.connection_id = Math.floor(Math.random() * 1000000000)
+  } while (ns_clients[req.connection_id])
+  // check for user any updated namespace
+  ns_clients[req.connection_id] = ns_name => {
+    user_check_ns(req, res, ns_name)
+  }
+
+  // go over ns cache and check namespaces
+  Object.keys(ns_cache).forEach(ns_name => {
+    user_check_ns(req, res, ns_name)
+  })
+}
 
 // create namespace
 app.post("/api/create/ns", async (req, res) => {
@@ -284,7 +320,7 @@ async function server_watch_ns() {
     // reset cache if watch was restarted (good for avoiding bugs)
     ns_cache = {}
 
-    // keep updating the cache
+    // keep updating the cache + clients
     await sa_k8s_api.watch(ns, event => {
       update_ns_cache(event)
       Object.keys(ns_clients).forEach(client => {
@@ -299,7 +335,7 @@ function update_ns_cache(event) {
   switch(event.type) {
     case 'ADDED':
     case 'MODIFIED':
-      ns_cache[obj.metadata.name] = obj
+      ns_cache[obj.metadata.name] = true
       break
     case 'DELETED':
       delete ns_cache[obj.metadata.name]
