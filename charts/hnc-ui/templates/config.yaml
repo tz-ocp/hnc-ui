@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Secret
+type: Opaque
+metadata:
+  name: hnc-config
+  namespace: hnc-ui
+stringData:
+{{- if .Values.openshift }}
+  OAUTH2_PROXY_COOKIE_SECRET: {{ .Values.ocp.cookie_secret }}
+  OAUTH2_PROXY_COOKIE_REFRESH: 100m
+  OAUTH2_PROXY_COOKIE_EXPIRE: 200m
+  OAUTH2_PROXY_CLIENT_ID: hnc
+  OAUTH2_PROXY_CLIENT_SECRET: {{ .Values.ocp.client_secret }}
+{{- else }}
+  OAUTH2_PROXY_HTTPS_ADDRESS: ":8443"
+  OAUTH2_PROXY_EMAIL_DOMAINS: "*"
+  OAUTH2_PROXY_UPSTREAMS: http://localhost:8080
+  OAUTH2_PROXY_SKIP_PROVIDER_BUTTON: "true"
+  OAUTH2_PROXY_PASS_ACCESS_TOKEN: "true"
+  OAUTH2_PROXY_PASS_USER_HEADERS: "true"
+  OAUTH2_PROXY_SKIP_AUTH_ROUTES: "GET=^/icon[.]png$"
+{{- end }}

@@ -1,0 +1,10 @@
+{{ if .Values.openshift -}}
+apiVersion: oauth.openshift.io/v1
+kind: OAuthClient
+metadata:
+  name: hnc
+redirectURIs:
+  - https://{{ .Values.ocp.ingress.host }}
+secret: {{ .Values.ocp.client_secret }}
+grantMethod: auto
+{{- end }}

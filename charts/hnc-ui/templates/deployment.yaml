@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: 
+  name: hnc-ui
+  namespace: hnc-ui
+spec: 
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hnc-ui
+  template:
+    metadata:
+      labels:
+        app: hnc-ui
+      {{- if .Values.openshift }}
+      annotations:
+        kubectl.kubernetes.io/default-container: server
+      {{- end }}
+    spec: 
+      containers:
+      - name: auth-proxy
+        image: {{ (.Values.openshift | ternary .Values.ocp .Values.k8s).auth_proxy.image }}
+        {{ if .Values.openshift -}}
+        args:
+        - --https-address=:8443
+        - --email-domain=*
+        - --upstream=http://localhost:8080
+        - --skip-provider-button
+        - --pass-access-token
+        - --pass-user-headers
+        - --provider=openshift
+        - --scope=user:full user:info user:check-access user:list-projects
+        - --skip-auth-regex=^/icon[.]png$
+        - --tls-cert=/etc/tls/private/tls.crt
+        - --tls-key=/etc/tls/private/tls.key
+        {{- end }}
+{{- with (.Values.openshift | ternary .Values.ocp .Values.k8s) }}
+        envFrom:
+        - secretRef:
+            name: hnc-config
+{{ with .auth_proxy.envFrom -}}
+{{- . | toYaml | indent 8 -}}
+{{- end }}
+        env:
+{{ with .auth_proxy.env -}}
+{{- . | toYaml | indent 8 -}}
+{{- end -}}
+{{- end }}
+        ports:
+        - containerPort: 8443
+          name: web
+        resources:
+          requests:
+            cpu: 1m
+            memory: 20Mi
+          limits:
+            cpu: 200m
+            memory: 200Mi
+        volumeMounts:
+        - mountPath: /etc/tls/bundle
+          name: ca-bundle
+{{ with (.Values.openshift | ternary .Values.ocp .Values.k8s).auth_proxy.volumeMounts -}}
+{{- . | toYaml | indent 8 -}}
+{{- end }}
+      - name: server
+        image: {{ (.Values.openshift | ternary .Values.ocp .Values.k8s).hnc_ui.image | default (print "ghcr.io/zfrhv/hnc-ui:" .Chart.Version) }}
+        ports:
+        - containerPort: 8080
+        env:
+{{ with (.Values.openshift | ternary .Values.ocp .Values.k8s).hnc_ui.env -}}
+{{- . | toYaml | indent 8 -}}
+{{- end }}
+      serviceAccount: hnc-ui
+      volumes:
+      - name: ca-bundle
+        configMap:
+          name: kube-root-ca.crt
+{{ with (.Values.openshift | ternary .Values.ocp .Values.k8s).volumes -}}
+{{- . | toYaml | indent 6 -}}
+{{- end }}
