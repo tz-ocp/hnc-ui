@@ -68,7 +68,7 @@ k8s:
       name: hnc-htpasswd
       namespace: hnc-ui
     stringData:
-      admin: admin:$2y$05$RuehTO58mJK57WKfAyDUkud.ZEHb626G.rj7SHGleAXNtB8lw7GKq # user admin:admin
+      admin: admin:$apr1$RqrNhpsO$10mNGxRt46KDt2gVtgifs. # user admin:admin
     --- # give the serviceAccount more permissions
     apiVersion: rbac.authorization.k8s.io/v1
     kind: ClusterRoleBinding
