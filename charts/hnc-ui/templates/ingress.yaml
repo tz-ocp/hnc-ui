@@ -36,7 +36,9 @@ spec:
               name: web
         path: /
         pathType: Prefix
+{{ if .Values.k8s.ingress.tls.enabled }}
   tls:
   - hosts:
-    - {{ .Values.k8s.ingress.host }}
+    - {{ $.Values.k8s.ingress.host }}
+{{ end }}
 {{- end }}

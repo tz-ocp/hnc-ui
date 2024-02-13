@@ -6,6 +6,8 @@ k8s:
     # Must specify host
     host: hnc.apps.test
     annotations: {}
+    tls:
+      enabled: false
 
   volumes:
   - name: hnc-htpasswd
