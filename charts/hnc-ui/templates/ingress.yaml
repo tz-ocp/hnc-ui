@@ -35,7 +35,7 @@ spec:
             port:
               targetPort: web
         path: /
-        pathType: ImplementationSpecific
+        pathType: Prefix
   tls:
   - hosts:
     - {{ .Values.k8s.ingress.host }}
