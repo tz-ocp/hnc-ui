@@ -131,6 +131,7 @@ async function user_watch_hrq(req, res, ns_name) {
 }
 
 async function user_check_ns(req, res, ns_name) {
+  console.log(ns_name)
   const ns_template = {
     apiVersion: 'v1',
     kind: 'Namespace',
