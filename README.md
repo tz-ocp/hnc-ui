@@ -7,6 +7,10 @@ helm repo add zfrhv https://zfrhv.github.io/hnc-ui
 helm repo update
 helm install k8s-hnc-ui -n hnc-ui --create-namespace --set k8s.ingress.host=hnc.test zfrhv/hnc-ui
 ```
+for openshift configure in values.yaml
+```yaml
+openshift: true
+```
 
 # Concept
 ### Basic workflow
