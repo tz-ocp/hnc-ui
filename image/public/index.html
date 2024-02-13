@@ -662,7 +662,7 @@ const hierarchy = {
 }
 
 const objects_sse = new EventSource('/api/get/objects')
-objects_sse.addEventListener('message', function(event) {
+objects_sse.onmessage = function(event) {
   let event_obj
   try {
     event_obj = JSON.parse(event.data)
@@ -672,7 +672,10 @@ objects_sse.addEventListener('message', function(event) {
   if (event_obj) {
     update_obj(event_obj)
   }
-})
+}
+objects_sse.onerror = function(err) {
+  console.error("EventSource failed:", err)
+}
 
 root = d3.hierarchy(hierarchy);
 
