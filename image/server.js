@@ -33,15 +33,15 @@ app.use(function (req,res,next) {
 app.use(express.static(__dirname+"/public"));
 
 // the client doesnt needs permissions to list objects cluster-wide scoped.
-// so thats why the pod will listend for all objects in cluster-wide scope and forward them to the user.
-// (that was when new namespace/object is being created we know that the client cant miss it)
+// so thats why the pod will listend for all namespaces and forwards their names to the user.
+// (that way when new namespace/object is being created we know that the client cant miss it)
 
 // the server is watching all the objects,
 // i will use Server-Send Events (SSE) (when user asks some url, dont res.end(), instead just keep res.write()),
 // the kubernetes watch lasts 5 minutes (etcd 3 history limit), so i will keep the SSE upto 5 mins as well (its greate for refreshing permissions)
 
-// i think that each client will watch for his objects as well, because i wont wanna send api request each time something changes.
-// so the server will listen for all, when namespace is added it will notify the clients, and the cliesnt will attempt to watch it as well.
+// i think that each client will watch for his objects as well per namespace, because i wont wanna send api request each time something changes.
+// so the server will listen for all namespaces, when namespace is added it will notify the clients, and the cliesnt will attempt to get the namespace info (ideally i would make the clie watch the namespace, but with view permissions on the namespace its not possible).
 // the server will save the list of namespaces locally in cache (only the names), cuz i wont wanna do extra quesry each time client connects.
 
 // API
@@ -145,12 +145,10 @@ async function user_check_ns(req, res, ns_name) {
       type: "MODIFIED",
       object: ns
     })}\n\n`)
-    console.log(ns_name)
-    console.log(ns)
 
     // watch quotas + hrqs
-    user_watch_quota(req, res, ns_name)
-    user_watch_hrq(req, res, ns_name)
+    //user_watch_quota(req, res, ns_name)
+    //user_watch_hrq(req, res, ns_name)
   })
   .catch(err => {
     res.write(`data: ${JSON.stringify({
