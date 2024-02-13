@@ -2,6 +2,15 @@ apiVersion: v1
 entries:
   hnc-ui:
   - apiVersion: v2
+    created: "2024-02-13T20:15:51.413200982Z"
+    description: Friendly user interface for HierarchicalNamespcaeController
+    digest: 4172abbacd178d95329ff5222235ed18db05f7f6d9060e0bdbc4dd52324e36ff
+    name: hnc-ui
+    type: application
+    urls:
+    - https://github.com/zfrhv/hnc-ui/releases/download/hnc-ui-2.1.12/hnc-ui-2.1.12.tgz
+    version: 2.1.12
+  - apiVersion: v2
     created: "2024-02-13T19:56:45.383459133Z"
     description: Friendly user interface for HierarchicalNamespcaeController
     digest: 21f62286d6e7728a08fda5996a0f2e83b71a8860cb0030a2cbea1a8aab6de29a
@@ -172,4 +181,4 @@ entries:
     urls:
     - https://github.com/zfrhv/hnc-ui/releases/download/hnc-ui-0.1.3/hnc-ui-0.1.3.tgz
     version: 0.1.3
-generated: "2024-02-13T19:56:45.38360271Z"
+generated: "2024-02-13T20:15:51.413340825Z"
