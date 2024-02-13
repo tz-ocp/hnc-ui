@@ -1,6 +1,8 @@
 k8s:
   ingress:
     host: hnc.apps.test.k8s
+    tls:
+      enabled: true
     annotations:
       nginx.ingress.kubernetes.io/backend-protocol: HTTPS
   volumes:
