@@ -33,7 +33,7 @@ spec:
           service:
             name: hnc-ui
             port:
-              targetPort: web
+              name: web
         path: /
         pathType: Prefix
   tls:
