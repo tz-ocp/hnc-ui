@@ -51,6 +51,7 @@ k8s:
             listen 8443;
             auth_basic "Admin user";
             auth_basic_user_file /etc/htpasswd/admin;
+            proxy_buffering off;
             location / {
               proxy_pass http://localhost:8080;
             }
