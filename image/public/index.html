@@ -896,7 +896,7 @@ function update_namespace(obj_update) {
 
     // if node didnt existed then create it
     if (!node) {
-      const node = create_node(ns_name)
+      node = create_node(ns_name)
       node.data.annotations = obj_update.object.metadata.annotations;
       node.data.labels = obj_update.object.metadata.labels;
       node.data.is_subnamespace = obj_update.object.metadata.annotations?.["hnc.x-k8s.io/subnamespace-of"] !== undefined ? true : false;
