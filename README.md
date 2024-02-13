@@ -11,6 +11,7 @@ for openshift configure in values.yaml
 ```yaml
 openshift: true
 ```
+you can view additional example [here](./charts/hnc-ui/examples)
 
 # Concept
 ### Basic workflow
