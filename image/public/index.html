@@ -679,13 +679,15 @@ root = d3.hierarchy(hierarchy);
 function findNode(node, ns_name) {
   if (node?.data?.name == ns_name) {
     return node
-  } else if (node.children || node._children) {
+  } else if (node?.children || node?._children) {
     let found_node
     const children = node.children ? node.children : node._children
     children.forEach(node => {
-      const child_node = findNode(node, ns_name)
-      if (child_node) {
-        found_node = child_node
+      if (node) {
+        const child_node = findNode(node, ns_name)
+        if (child_node) {
+          found_node = child_node
+        }
       }
     })
     if (found_node) {
