@@ -141,14 +141,16 @@ async function user_check_ns(req, res, ns_name) {
   
   await req.k8s_api.get(ns_template)
   .then(ns => {
-    res.write(`data: ${JSON.stringify({
+    const tmp = `data: ${JSON.stringify({
       type: "MODIFIED",
       object: ns
-    })}\n\n`)
+    })}\n\n`
+    console.log(tmp)
+    res.write(tmp)
 
     // watch quotas + hrqs
-    //user_watch_quota(req, res, ns_name)
-    //user_watch_hrq(req, res, ns_name)
+    user_watch_quota(req, res, ns_name)
+    user_watch_hrq(req, res, ns_name)
   })
   .catch(err => {
     res.write(`data: ${JSON.stringify({
