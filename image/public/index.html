@@ -677,7 +677,7 @@ objects_sse.addEventListener('message', function(event) {
 root = d3.hierarchy(hierarchy);
 
 function findNode(node, ns_name) {
-  if (node.data.name == ns_name) {
+  if (node?.data?.name == ns_name) {
     return node
   } else if (node.children || node._children) {
     let found_node
