@@ -345,6 +345,6 @@ function update_ns_cache(event) {
   }
 }
 
-server.listen(8080, function () {
+server.listen(8080, '127.0.0.1', function () {
   console.log(chalk.green('listening on port 8080'))
 })
