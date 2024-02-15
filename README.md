@@ -27,3 +27,8 @@ The tree diagram is made with `d3.js`.
 
 You can easily view and manage your namespaces by simply right clicking!  
 Live updates by using kubernetes watch!
+
+### maybe todo
+- allow change namespace parent
+- add cascading deletion button
+- add modify hrq from the ui
