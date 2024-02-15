@@ -89,7 +89,7 @@ class k8s {
             } catch(err) {
               // if not last event then something broken inside the objects
               if (index != events.length-1) {
-                throw err
+                throw `error parsing buffer while watching objects from k8s, the buffer is:\n${buffer}\nthe error is: \n${err}`
               }
             }
   
