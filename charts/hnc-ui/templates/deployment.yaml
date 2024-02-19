@@ -66,8 +66,6 @@ spec:
         image: {{ (.Values.openshift | ternary .Values.ocp .Values.k8s).hnc_ui.image | default (print "ghcr.io/zfrhv/hnc-ui:" .Chart.Version) }}
         ports:
         - containerPort: 8080
-        - containerPort: 9090
-          name: metrics
         env:
 {{ with (.Values.openshift | ternary .Values.ocp .Values.k8s).hnc_ui.env -}}
 {{- . | toYaml | indent 8 -}}
