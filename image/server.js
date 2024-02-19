@@ -22,9 +22,11 @@ app.get('/logout', (req, res) => {
   res.redirect(301, process.env.LOGOUT_PATH)
 })
 
-app.get('/metrics', (req, res) => {
+app.get('/metrics', async (req, res) => {
   res.set('Content-Type', prom_client.register.contentType)
-  res.end(prom_client.register.metrics)
+  console.log('a')
+  console.log(await prom_client.register.metrics())
+  res.end(await prom_client.register.metrics())
 })
 
 // verbose user info for every request
