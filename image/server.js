@@ -76,7 +76,7 @@ async function user_watch_quota(req, res, ns_name) {
   })
   .then(async () => { // after first watching sucesfully ended
     // keep restart watches if timedout
-    while (true) {
+    while (ns_clients[req.connection_id]) {
       await req.k8s_api.watch(quota, event => {
         res.write(`data: ${JSON.stringify(event)}\n\n`)
       })
@@ -315,7 +315,7 @@ async function server_watch_ns() {
   }
 
   // keep restart watches if timedout
-  while (true) {
+  while (ns_clients[req.connection_id]) {
     // watch for any update like ADDED/MODIFIED/DELETED
     console.log(chalk.green(`starting watch on namespaces`))
 
