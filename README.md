@@ -32,3 +32,6 @@ Live updates by using kubernetes watch!
 - allow change namespace parent
 - add cascading deletion button
 - add modify hrq from the ui
+- add question mark at top right that will explain
+  - /metrics
+  - right click features
