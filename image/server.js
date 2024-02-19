@@ -22,6 +22,11 @@ app.get('/logout', (req, res) => {
   res.redirect(301, process.env.LOGOUT_PATH)
 })
 
+app.get('/metrics', (req, res) => {
+  res.set('Content-Type', prom_client.register.contentType)
+  res.end(prom_client.register.metrics)
+})
+
 // verbose user info for every request
 app.use(function (req,res,next) {
   if (process.env.USE_SA_TOKEN == "true") {
