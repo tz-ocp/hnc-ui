@@ -3,8 +3,9 @@ const chalk = require('chalk')
 chalk.level = 1
 
 // init metrics
-metrics = require('metrics');
-var metricsServer = new metrics.Server(9090);
+const prom_client = require('prom-client');
+const collectDefaultMetrics = prom_client.collectDefaultMetrics;
+collectDefaultMetrics({ prefix: 'hnc_ui_' });
 
 // init file reader
 const fs = require('node:fs')
@@ -307,7 +308,10 @@ let ns_clients = {}
 let ns_cache = {}
 server_watch_ns()
 
-metricsServer.addMetric('clients_watching_objects', Object.keys(ns_clients).length);
+const clients_metric = new prom_client.Gauge({ name: 'clients', help: 'the number of clients that are currently watching "/api/get/objects" (namespaces + quotas + hrqs)' });
+setInterval(() => {
+  clients_metric.set(Object.keys(ns_clients).length)
+}, 1000)
 
 async function server_watch_ns() {
   const ns = {
