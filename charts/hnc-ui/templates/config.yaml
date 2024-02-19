@@ -18,5 +18,5 @@ stringData:
   OAUTH2_PROXY_SKIP_PROVIDER_BUTTON: "true"
   OAUTH2_PROXY_PASS_ACCESS_TOKEN: "true"
   OAUTH2_PROXY_PASS_USER_HEADERS: "true"
-  OAUTH2_PROXY_SKIP_AUTH_ROUTES: "GET=^/icon[.]png$"
+  OAUTH2_PROXY_SKIP_AUTH_ROUTES: "GET=^(/icon[.]png|/metrics)$"
 {{- end }}

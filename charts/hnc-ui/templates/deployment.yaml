@@ -30,7 +30,7 @@ spec:
         - --pass-user-headers
         - --provider=openshift
         - --scope=user:full user:info user:check-access user:list-projects
-        - --skip-auth-regex=^/icon[.]png$
+        - --skip-auth-regex=^(/icon[.]png|/metrics)$
         - --tls-cert=/etc/tls/private/tls.crt
         - --tls-key=/etc/tls/private/tls.key
         {{- end }}

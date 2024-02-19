@@ -59,6 +59,10 @@ k8s:
               auth_basic off;
               proxy_pass http://localhost:8080;
             }
+            location /metrics {
+              auth_basic off;
+              proxy_pass http://localhost:8080;
+            }
           }
         }
     --- # configure local user
