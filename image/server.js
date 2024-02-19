@@ -2,6 +2,10 @@
 const chalk = require('chalk')
 chalk.level = 1
 
+// init metrics
+metrics = require('metrics');
+var metricsServer = new metrics.Server(9090);
+
 // init file reader
 const fs = require('node:fs')
 
@@ -302,6 +306,8 @@ app.delete("/api/delete/ns", async (req, res) => {
 let ns_clients = {}
 let ns_cache = {}
 server_watch_ns()
+
+metricsServer.addMetric('clients_watching_objects', Object.keys(ns_clients).length);
 
 async function server_watch_ns() {
   const ns = {
