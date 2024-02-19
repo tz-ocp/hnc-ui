@@ -24,8 +24,6 @@ app.get('/logout', (req, res) => {
 
 app.get('/metrics', async (req, res) => {
   res.set('Content-Type', prom_client.register.contentType)
-  console.log('a')
-  console.log(await prom_client.register.metrics())
   res.end(await prom_client.register.metrics())
 })
 
@@ -315,7 +313,7 @@ let ns_clients = {}
 let ns_cache = {}
 server_watch_ns()
 
-const clients_metric = new prom_client.Gauge({ name: 'clients', help: 'the number of clients that are currently watching "/api/get/objects" (namespaces + quotas + hrqs)' });
+const clients_metric = new prom_client.Gauge({ name: 'hnc_ui_clients', help: 'the number of clients that are currently watching "/api/get/objects" (namespaces + quotas + hrqs)' });
 setInterval(() => {
   clients_metric.set(Object.keys(ns_clients).length)
 }, 1000)
