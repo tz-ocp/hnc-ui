@@ -211,7 +211,8 @@ app.post("/api/create/ns", async (req, res) => {
     metadata: {
       name: ns_name
     }
-  }).catch(err => handle_error(err, res)).then(async () => {
+  })
+  .then(async () => {
     if (parent_ns) {
       // create the namespace
       await req.k8s_api.create({
@@ -224,14 +225,13 @@ app.post("/api/create/ns", async (req, res) => {
         spec: {
           parent: parent_ns
         }
-      }).then(() => {
-        res.end(`successfully created namespace '${ns_name}'`)
-      }).catch(err => handle_error(err, res))
-  
+      })
+      res.end(`successfully created namespace '${ns_name}'`)
     } else {
       res.end(`successfully created namespace '${ns_name}'`)
     }
   })
+  .catch(err => handle_error(err, res))
 })
 
 // create sub-namespace
@@ -261,40 +261,42 @@ app.post("/api/create/sub-ns", async (req, res) => {
 app.delete("/api/delete/ns", async (req, res) => {
   const ns_name = req.get('ns-name')
 
-  const ns = await req.k8s_api.get({
+  await req.k8s_api.get({
     apiVersion: 'v1',
     kind: 'Namespace',
     metadata: {
       name: ns_name
     }
-  }).catch(err => handle_error(err, res))
+  })
+  .then(ns => {
+    const parent_ns = ns.metadata.annotations?.["hnc.x-k8s.io/subnamespace-of"]
 
-  const parent_ns = ns.metadata.annotations?.["hnc.x-k8s.io/subnamespace-of"]
-
-  if (parent_ns) {
-    // delete son CR, to automatically delete namespace
-    req.k8s_api.delete({
-      apiVersion: 'hnc.x-k8s.io/v1alpha2',
-      kind: 'SubnamespaceAnchor',
-      metadata: {
-        name: ns_name,
-        namespace: parent_ns
-      }
-    }).then(() => {
-      res.end(`successfully deleted namespace '${ns_name}'`)
-    }).catch(err => handle_error(err, res))
-  } else {
-    // delete the namespace
-    req.k8s_api.delete({
-      apiVersion: 'v1',
-      kind: 'Namespace',
-      metadata: {
-        name: ns_name
-      }
-    }).then(() => {
-      res.end(`successfully deleted namespace '${ns_name}'`)
-    }).catch(err => handle_error(err, res))
-  }
+    if (parent_ns) {
+      // delete son CR, to automatically delete namespace
+      req.k8s_api.delete({
+        apiVersion: 'hnc.x-k8s.io/v1alpha2',
+        kind: 'SubnamespaceAnchor',
+        metadata: {
+          name: ns_name,
+          namespace: parent_ns
+        }
+      }).then(() => {
+        res.end(`successfully deleted namespace '${ns_name}'`)
+      })
+    } else {
+      // delete the namespace
+      req.k8s_api.delete({
+        apiVersion: 'v1',
+        kind: 'Namespace',
+        metadata: {
+          name: ns_name
+        }
+      }).then(() => {
+        res.end(`successfully deleted namespace '${ns_name}'`)
+      })
+    }
+  })
+  .catch(err => handle_error(err, res))
 })
 
 let ns_clients = {}
