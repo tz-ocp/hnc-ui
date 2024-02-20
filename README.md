@@ -35,3 +35,4 @@ Live updates by using kubernetes watch!
 - add question mark at top right that will explain
   - /metrics
   - right click features
+- add namesoace creation date
