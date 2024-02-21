@@ -33,6 +33,10 @@ class k8s {
     }
   }
 
+  get_token() {
+    return this.opts.headers["Authorization"].replace("Bearer ","")
+  }
+
   get(object) {
     const url = this.create_url(object).toString()
     return axios.get(url, this.opts).then((res) => res.data.items ? res.data.items : res.data).catch(err => this.verbose_error(err, url, object))

@@ -168,8 +168,31 @@ async function user_check_ns(req, res, ns_name) {
   })
 }
 
+async function verify_token(req) {
+  token_res = await req.k8s_api.create({
+    apiVersion: 'authentication.k8s.io/v1',
+    kind: 'TokenReview',
+    metadata: {
+      name: 'test'
+    },
+    spec: {
+      token: req.k8s_api.get_token()
+    }
+  })
+  if (token_res.status.error) {
+    return false
+  } else {
+    return true
+  }
+}
+
 // stream namespaces + quota + hrq
 app.get("/api/get/objects", async (req, res) => {
+  // logout if token is invalid
+  if (!verify_token(req)) {
+    res.redirect(302, '/logout')
+  }
+
   res.setHeader('Content-Type', 'text/event-stream')
   res.setHeader('Cache-Control', 'no-cache')
   res.setHeader('Connection', 'keep-alive')
