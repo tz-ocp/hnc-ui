@@ -9,6 +9,22 @@
 
     <div id="top-bar" style="height: 40px; width: 100%; background-color: #1e2e54;">
       <a href="https://github.com/kubernetes-sigs/hierarchical-namespaces/releases" target="_blank" style="float: left; margin: 10px; color: #caad5b;">Download CLI tool</a>
+      <div id="intro" style="float: right; margin: 10px; cursor: pointer;">❓</div>
+      <div id="intro-content" style="right: 30px; top: 30px; font-family: cursive; position:absolute; width: 300px; height: auto; padding: 20px; background-color: #33353d; border: solid 1px #4f515a; border-radius: 5px;">
+        View metrics on /metrics
+        <br>
+        <br>
+        Right click a namespace or empty spot to see optios
+      </div>
+      <script id="display-intro" style="display: none;">
+        document.getElementById("intro-content").style.display = "none"
+        document.getElementById("intro").addEventListener("mouseenter", function() {
+          document.getElementById("intro-content").style.display = "block"
+        })
+        document.getElementById("intro").addEventListener("mouseleave", function() {
+          document.getElementById("intro-content").style.display = "none"
+        })
+      </script>
       <a href="logout" style="float: right; margin: 10px; color: #cfd3e3;">Logout</a>
       <div id="username" style="float: right; margin: 10px; color: #cfd3e3;"></div>
       <script id="get-username">
@@ -30,6 +46,10 @@
         <div id="sb-name" style="width: 100%; text-align: center; font-size: 40px; margin-top: 20px;">
         </div>
         <div id="sb-details" style="margin: 20px;">
+          <div class="sb-header" style="margin: 20px; color: #83abf7;">
+            Info
+          </div>
+          <div id="sb-info" style="margin: 20px;"></div>
           <div class="sb-header" style="margin: 20px; color: #d93333;">
             HierarchicalResourceQuota
           </div>
@@ -45,7 +65,7 @@
           </div>
           <div id="sb-annotations" style="margin: 20px;">
           </div>
-          <div class="sb-header" style="margin: 20px; color: #83abf7;">
+          <div class="sb-header" style="margin: 20px; color: #f783c7;">
             Labels
           </div>
           <div id="sb-labels" style="margin: 20px;">
@@ -310,10 +330,13 @@ async function flip_tree() {
 function update_right_bar_text() {
   const right_bar = d3.select('#right-bar')
   right_bar.select('#sb-name').text(selected_ns.data.name);
+  right_bar.select('#sb-info').html(`
+  creationTimestamp: ${selected_ns.data.metadata.creationTimestamp}
+  `);
   right_bar.select('#sb-quota').html(quota_to_string(selected_ns.data.quota));
   right_bar.select('#sb-usage').html(usage_to_string(selected_ns.data.usage));
-  right_bar.select('#sb-annotations').html(annotations_to_string(selected_ns.data.annotations));
-  right_bar.select('#sb-labels').html(labels_to_string(selected_ns.data.labels));
+  right_bar.select('#sb-annotations').html(annotations_to_string(selected_ns.data.metadata.annotations));
+  right_bar.select('#sb-labels').html(labels_to_string(selected_ns.data.metadata.labels));
 }
 
 function quota_to_string(quota) {
@@ -904,8 +927,7 @@ function update_namespace(obj_update) {
     // if node didnt existed then create it
     if (!node) {
       node = create_node(ns_name)
-      node.data.annotations = obj_update.object.metadata.annotations;
-      node.data.labels = obj_update.object.metadata.labels;
+      node.data.metadata = obj_update.object.metadata;
       node.data.is_subnamespace = obj_update.object.metadata.annotations?.["hnc.x-k8s.io/subnamespace-of"] !== undefined ? true : false;
     }
 
