@@ -717,7 +717,7 @@ async function findNodeRetries(node, ns_name) {
   return found_node
 }
 
-function remove_ns_from_tree(ns_name) {
+function remove_ns_from_tree(ns_name, update_tree = true) {
   const ns_node = findNode(root, ns_name)
   if (!ns_node) {
     return undefined
@@ -735,11 +735,13 @@ function remove_ns_from_tree(ns_name) {
     }
   }
   parent.data.children = parent.data.children.filter(node => node.name != ns_name)
-  update(parent)
+  if (update_tree) {
+    update(parent)
+  }
   return ns_node
 }
 
-async function add_ns_to_tree(node, parent_name) {
+async function add_ns_to_tree(node, parent_name, update_tree = true) {
   let parent = await findNodeRetries(root, parent_name)
 
   // sorted childrent push
@@ -776,7 +778,9 @@ async function add_ns_to_tree(node, parent_name) {
   node.height = parent.height - 1
   node.parent = parent
 
-  update(parent)
+  if (update_tree) {
+    update(parent)
+  }
 }
 
 function create_node(ns_name) {
@@ -895,7 +899,7 @@ function update_namespace(obj_update) {
       parent = "Namespaces"
     }
 
-    let node = remove_ns_from_tree(ns_name)
+    let node = remove_ns_from_tree(ns_name, false)
 
     // if node didnt existed then create it
     if (!node) {
