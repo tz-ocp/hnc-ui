@@ -44,8 +44,7 @@ k8s:
       namespace: hnc-ui
     stringData:
       nginx.conf: |
-        events {
-        }
+        events {}
         http {
           server {
             listen 8443;
