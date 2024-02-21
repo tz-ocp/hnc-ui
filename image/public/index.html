@@ -331,7 +331,7 @@ function update_right_bar_text() {
   const right_bar = d3.select('#right-bar')
   right_bar.select('#sb-name').text(selected_ns.data.name);
   right_bar.select('#sb-info').html(`
-  creationTimestamp: ${selected_ns.data.metadata.creationTimestamp}
+  creation: ${new Date(selected_ns.data.metadata.creationTimestamp).toDateString()}
   `);
   right_bar.select('#sb-quota').html(quota_to_string(selected_ns.data.quota));
   right_bar.select('#sb-usage').html(usage_to_string(selected_ns.data.usage));

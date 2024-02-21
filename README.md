@@ -32,4 +32,3 @@ Live updates by using kubernetes watch!
 - allow change namespace parent
 - add cascading deletion button
 - add modify hrq from the ui
-- add namesoace creation date
