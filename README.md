@@ -36,4 +36,3 @@ Live updates by using kubernetes watch!
   - /metrics
   - right click features
 - add namesoace creation date
-- check when token is expired and redirect to /logout
