@@ -179,10 +179,10 @@ async function verify_token(req) {
       token: req.k8s_api.get_token()
     }
   })
-  if (token_res.status.error) {
-    return false
-  } else {
+  if (token_res.status.user.uid) {
     return true
+  } else {
+    return false
   }
 }
 
