@@ -2,7 +2,7 @@ const axios = require('axios')
 const https = require('node:https')
 const querystring = require('querystring')
 const pluralize = require('pluralize')
-const k8s_host = 'kubernetes.default.svc'
+const k8s_host = 'kubernetes.default.svc.cluster.local.'
 
 const default_opts = {
   headers: {
