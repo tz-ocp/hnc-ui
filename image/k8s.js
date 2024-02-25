@@ -2,7 +2,7 @@ const axios = require('axios')
 const https = require('node:https')
 const querystring = require('querystring')
 const pluralize = require('pluralize')
-const k8s_host = 'kubernetes.default.svc.cluster.local.'
+const k8s_host = 'kubernetes.default.svc.cluster.local'
 
 const default_opts = {
   headers: {
@@ -39,17 +39,17 @@ class k8s {
 
   get(object) {
     const url = this.create_url(object).toString()
-    return axios.get(url, this.opts).then((res) => res.data.items ? res.data.items : res.data).catch(err => this.verbose_error(err, url, object))
+    return axios.get(url, this.opts).then(res => res.data.items ? res.data.items : res.data).catch(err => this.verbose_error(err, url, object))
   }
 
   create(object) {
     const url = this.create_url(object, false).toString()
-    return axios.post(url, object, this.opts).catch(err => this.verbose_error(err, url, object))
+    return axios.post(url, object, this.opts).then(res => res.data.items ? res.data.items : res.data).catch(err => this.verbose_error(err, url, object))
   }
 
   delete(object) {
     const url = this.create_url(object).toString()
-    return axios.delete(url, this.opts).catch(err => this.verbose_error(err, url, object))
+    return axios.delete(url, this.opts).then(res => res.data.items ? res.data.items : res.data).catch(err => this.verbose_error(err, url, object))
   }
 
   watch(object, use_event, run_after_connected) {
