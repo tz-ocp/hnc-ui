@@ -5,7 +5,7 @@ metadata:
   name: web
   namespace: hnc-ui
 spec:
-  host: {{ .Values.ocp.ingress.host }}
+  host: {{ tpl .Values.ocp.ingress.host $ }}
   port:
     targetPort: web
   tls:
@@ -26,7 +26,7 @@ metadata:
   namespace: hnc-ui
 spec:
   rules:
-  - host: {{ .Values.k8s.ingress.host }}
+  - host: {{ tpl .Values.k8s.ingress.host $ }}
     http:
       paths:
       - backend:
@@ -39,6 +39,6 @@ spec:
 {{ if .Values.k8s.ingress.tls.enabled }}
   tls:
   - hosts:
-    - {{ $.Values.k8s.ingress.host }}
+    - {{ tpl $.Values.k8s.ingress.host $ }}
 {{ end }}
 {{- end }}
