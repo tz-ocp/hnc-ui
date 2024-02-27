@@ -209,6 +209,16 @@ hr {
   background-color: #575859;
   border-radius: 5px;
 }
+
+.btn {
+  height: 25px;
+  background-color: #7ecf7e;
+  border-radius: 5px;
+  padding-left: 5px;
+  padding-right: 5px;
+  color: black;
+  cursor: pointer;
+}
     </style>
     <script id="hierarchy-graph">
 let selected_ns
@@ -333,7 +343,7 @@ function update_right_bar_text() {
   right_bar.select('#sb-info').html(`
   creation: ${new Date(selected_ns.data.metadata.creationTimestamp).toDateString()}
   `);
-  right_bar.select('#sb-quota').html(quota_to_string(selected_ns.data.quota));
+  right_bar.select('#sb-quota').html(quota_to_string(selected_ns.data.quota) + `<div class="btn" style="float: right;">Edit</div>`);
   right_bar.select('#sb-usage').html(usage_to_string(selected_ns.data.usage));
   right_bar.select('#sb-annotations').html(annotations_to_string(selected_ns.data.metadata.annotations));
   right_bar.select('#sb-labels').html(labels_to_string(selected_ns.data.metadata.labels));
