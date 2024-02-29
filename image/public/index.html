@@ -54,6 +54,17 @@
             HierarchicalResourceQuota
           </div>
           <div id="sb-quota" style="margin: 20px;">
+            <div id="sb-quota-content"></div>
+            <div id="sb-quota-edit-btn" class="btn" style="float: right;">Edit</div>
+            <script>
+              document.getElementById("sb-quota-edit-btn").onclick = () => {
+                if (selected_ns.data.quota) {
+                  edit_popup_display(selected_ns.data.quota)
+                } else {
+                  edit_popup_display(`apiVersion: hnc`)
+                }
+              }
+            </script>
           </div>
           <div class="sb-header" style="margin: 20px; color: #e1dd0c;">
             Usage
@@ -97,6 +108,25 @@
         </div>
        </a>
     </div>
+
+    <div id="edit_popup" style="border: solid 2px #545d6f; padding: 10px; overflow: hidden; border-radius: 8px; background-color: #414651; display: none; position: absolute; user-select: none; left: 50%; top: 50%; width: 900px; height: 600px; margin-top: -300px; margin-left: -450px;">
+      <textarea id="edit_popup_content" rows="10" style="resize: none; width: 100%; height: calc(100% - 40px);"></textarea>
+      <div id="edit_popup_apply" class="btn" onclick="edit_popup_apply()" style="float: right; margin: 6px;">Apply</div>
+      <div id="edit_popup_cancel" class="btn" onclick="edit_popup_cancel()" style="float: right; margin: 6px;">Cancel</div>
+    </div>
+    <script>
+      function edit_popup_display(content) {
+        document.getElementById("edit_popup_content").innerHTML = content
+        document.getElementById("edit_popup").style.display = "block"
+      }
+      function edit_popup_apply() {
+
+      }
+      function edit_popup_cancel() {
+        document.getElementById("edit_popup_content").innerHTML = ""
+        document.getElementById("edit_popup").style.display = "none"
+      }
+    </script>
 
     <div id="ns_menu" style="display: none; position: absolute; user-select: none;">
       <div id="create-ns" class="option-text">
@@ -218,6 +248,16 @@ hr {
   padding-right: 5px;
   color: black;
   cursor: pointer;
+  font-family: cursive;
+}
+
+textarea {
+  background-color: #595f6b;
+  border-radius: 3px;
+  color: white;
+  outline: none;
+  font-size: 20px;
+  padding: 5px;
 }
     </style>
     <script id="hierarchy-graph">
@@ -343,7 +383,7 @@ function update_right_bar_text() {
   right_bar.select('#sb-info').html(`
   creation: ${new Date(selected_ns.data.metadata.creationTimestamp).toDateString()}
   `);
-  right_bar.select('#sb-quota').html(quota_to_string(selected_ns.data.quota) + `<div class="btn" style="float: right;">Edit</div>`);
+  right_bar.select('#sb-quota-content').html(quota_to_string(selected_ns.data.quota));
   right_bar.select('#sb-usage').html(usage_to_string(selected_ns.data.usage));
   right_bar.select('#sb-annotations').html(annotations_to_string(selected_ns.data.metadata.annotations));
   right_bar.select('#sb-labels').html(labels_to_string(selected_ns.data.metadata.labels));
