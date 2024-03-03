@@ -42,6 +42,10 @@ app.use(function (req,res,next) {
 // serve all files in "public" folder
 app.use(express.static(__dirname+"/public"));
 
+// parse req body
+app.use(express.urlencoded());
+app.use(express.json());
+
 // the client doesnt needs permissions to list objects cluster-wide scoped.
 // so thats why the pod will listend for all namespaces and forwards their names to the user.
 // (that way when new namespace/object is being created we know that the client cant miss it)
@@ -324,6 +328,15 @@ app.delete("/api/delete/ns", async (req, res) => {
         res.end(`successfully deleted namespace '${ns_name}'`)
       })
     }
+  })
+  .catch(err => handle_error(err, res))
+})
+
+// apply yaml
+app.put("/api/apply", async (req, res) => {
+  await req.k8s_api.apply(req.body)
+  .then(async (apply_res) => {
+    res.end(apply_res)
   })
   .catch(err => handle_error(err, res))
 })

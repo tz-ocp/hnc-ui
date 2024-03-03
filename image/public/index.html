@@ -4,6 +4,8 @@
     <title>Namespace Hierarchy</title>
     <link rel="shortcut icon" href="icon.png">
     <script id="d3-js" src="d3.v7.min.js"></script>
+    <script id="yamljs" type="text/javascript" src="yaml.min.js"></script>
+
     <script id="hacks">
       function trim_multiline(str) {
         str = str.replace(/^\n/, '')
@@ -66,7 +68,7 @@
             <script>
               document.getElementById("sb-quota-edit-btn").onclick = () => {
                 if (selected_ns.data.quota) {
-                  edit_popup_display(selected_ns.data.quota)
+                  edit_popup_display(YAML.stringify(selected_ns.data.quota))
                 } else {
                   edit_popup_display(trim_multiline(`
                   apiVersion: hnc.x-k8s.io/v1alpha2
@@ -132,7 +134,7 @@
     <div id="edit_popup" style="width: calc(100vw - 630px); height: calc(100vh - 70px); left: 0; top: 40px; border: solid 5px #61697a; padding: 10px; overflow: hidden; background-color: #414651; display: none; position: absolute; user-select: none;">
       <textarea id="edit_popup_content" rows="10" style="resize: none; width: calc(100% - 10px); height: calc(100% - 60px);" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
       <div id="edit_popup_apply" class="btn" onclick="edit_popup_apply()" style="float: right; margin: 6px;">Apply</div>
-      <div id="edit_popup_cancel" class="btn" onclick="edit_popup_cancel()" style="float: right; margin: 6px;">Cancel</div>
+      <div id="edit_popup_cancel" class="btn" onclick="edit_popup_close()" style="float: right; margin: 6px;">Cancel</div>
     </div>
     <script>
       function edit_popup_display(content) {
@@ -140,9 +142,32 @@
         document.getElementById("edit_popup").style.display = "block"
       }
       function edit_popup_apply() {
-
+        const yaml_obj = document.getElementById("edit_popup_content").innerHTML
+        opts = {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(YAML.parse(yaml_obj))
+        }
+        fetch('/api/apply', opts)
+          .then(res => {
+            if (res.ok) {
+              return res.text()
+            } else {
+              return res.text().then(text => {throw new Error(text)})
+            }
+          })
+          .then(msg => {
+            console.log(msg)
+            edit_popup_close()
+          })
+          .catch(error => {
+            console.error(error)
+            alert("ERROR:" + error)
+          });
       }
-      function edit_popup_cancel() {
+      function edit_popup_close() {
         document.getElementById("edit_popup_content").innerHTML = ""
         document.getElementById("edit_popup").style.display = "none"
       }

@@ -52,6 +52,12 @@ class k8s {
     return axios.delete(url, this.opts).then(res => res.data.items ? res.data.items : res.data).catch(err => this.verbose_error(err, url, object))
   }
 
+  apply(object) {
+    const url = this.create_url(object).toString()
+    // TODO use kubectl npm instead? cuz apply is way too hard
+    return axios.post(url, object, this.opts).then(res => res.data.items ? res.data.items : res.data).catch(err => this.verbose_error(err, url, object))
+  }
+
   watch(object, use_event, run_after_connected) {
     let url = this.create_url(object, false)
     url.path += (url.path.includes('?') ? '&' : '?') + 'watch=true'
