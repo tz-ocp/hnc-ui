@@ -4,7 +4,7 @@
     <title>Namespace Hierarchy</title>
     <link rel="shortcut icon" href="icon.png">
     <script id="d3-js" src="d3.v7.min.js"></script>
-    <script id="yamljs" type="text/javascript" src="yaml.min.js"></script>
+    <script id="js-yaml" src="js-yaml.min.js"></script>
 
     <script id="hacks">
       function trim_multiline(str) {
@@ -68,7 +68,11 @@
             <script>
               document.getElementById("sb-quota-edit-btn").onclick = () => {
                 if (selected_ns.data.quota) {
-                  edit_popup_display(YAML.stringify(selected_ns.data.quota))
+                  const hrq = Object.assign({}, selected_ns.data.quota)
+                  delete hrq.status
+                  delete hrq.metadata.managedFields
+                  delete hrq.metadata.annotations["kubectl.kubernetes.io/last-applied-configuration"]
+                  edit_popup_display(jsyaml.dump(hrq))
                 } else {
                   edit_popup_display(trim_multiline(`
                   apiVersion: hnc.x-k8s.io/v1alpha2
@@ -148,7 +152,7 @@
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify(YAML.parse(yaml_obj))
+          body: JSON.stringify(jsyaml.load(yaml_obj))
         }
         fetch('/api/apply', opts)
           .then(res => {
