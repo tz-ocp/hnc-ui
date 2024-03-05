@@ -146,6 +146,74 @@ async function user_watch_hrq(req, res, ns_name) {
   })
 }
 
+async function user_watch_network_policy(req, res, ns_name) {
+  const network_policy = {
+    apiVersion: 'networking.k8s.io/v1',
+    kind: 'NetworkPolicy',
+    metadata: {
+      namespace: ns_name
+    }
+  }
+
+  await req.k8s_api.watch(network_policy, event => {
+    res.write(`data: ${JSON.stringify(event)}\n\n`)
+  })
+  .then(async () => { // after first watching sucesfully ended
+    // keep restart watches if timedout
+    while (ns_clients[req.connection_id]) {
+      await req.k8s_api.watch(network_policy, event => {
+        res.write(`data: ${JSON.stringify(event)}\n\n`)
+      })
+    }
+  })
+  .catch(err => {
+    res.write(`data: ${JSON.stringify({
+      type: "ADDED",
+      object: {
+        kind: 'NetworkPolicy',
+        metadata: {
+          namespace: ns_name
+        },
+        message: `couldnt watch network policy on namespace '${ns_name}', error: ${err.message}`
+      }
+    })}\n\n`)
+  })
+}
+
+async function user_watch_hierarchy_config(req, res, ns_name) {
+  const hierarchy_config = {
+    apiVersion: 'hnc.x-k8s.io/v1alpha2',
+    kind: 'HierarchyConfiguration',
+    metadata: {
+      namespace: ns_name
+    }
+  }
+
+  await req.k8s_api.watch(hierarchy_config, event => {
+    res.write(`data: ${JSON.stringify(event)}\n\n`)
+  })
+  .then(async () => { // after first watching sucesfully ended
+    // keep restart watches if timedout
+    while (ns_clients[req.connection_id]) {
+      await req.k8s_api.watch(hierarchy_config, event => {
+        res.write(`data: ${JSON.stringify(event)}\n\n`)
+      })
+    }
+  })
+  .catch(err => {
+    res.write(`data: ${JSON.stringify({
+      type: "ADDED",
+      object: {
+        kind: 'HierarchyConfiguration',
+        metadata: {
+          namespace: ns_name
+        },
+        message: `couldnt watch hierarchy config on namespace '${ns_name}', error: ${err.message}`
+      }
+    })}\n\n`)
+  })
+}
+
 async function user_check_ns(req, res, ns_name) {
   const ns_template = {
     apiVersion: 'v1',
@@ -162,9 +230,11 @@ async function user_check_ns(req, res, ns_name) {
       object: ns
     })}\n\n`)
 
-    // watch quotas + hrqs
+    // watch objects inside the namespace
     user_watch_quota(req, res, ns_name)
     user_watch_hrq(req, res, ns_name)
+    user_watch_network_policy(req, res, ns_name)
+    user_watch_hierarchy_config(req, res, ns_name)
   })
   .catch(err => {
     res.write(`data: ${JSON.stringify({
@@ -340,8 +410,8 @@ app.delete("/api/delete/ns", async (req, res) => {
 // apply yaml
 app.put("/api/apply", async (req, res) => {
   await req.k8s_api.apply(req.body)
-  .then(async (apply_res) => {
-    res.end(`succesfully applied object ${apply_res.metadata.name}`)
+  .then(apply_res => {
+    res.end(`succesfully applied object ${req.body.metadata.name}`)
   })
   .catch(err => handle_error(err, res))
 })
@@ -364,12 +434,34 @@ app.put("/api/change/parent", async (req, res) => {
       // modify the config CR for new parent
       hierarchy_conf.spec.parent = parent_ns
       req.k8s_api.apply(hierarchy_conf).then(hierarchy_conf => {
-        res.end(`changed parent ns to ${hierarchy_conf.spec.parent}`)
+        res.end(`changed parent ns to ${parent_ns}`)
       }).catch(err => handle_error(err, res))
     }).catch(err => handle_error(err, res))
   } else {
     res.status(400).end(`you must specify parent_ns header`)
   }
+})
+
+// change parent ns
+app.put("/api/change/cascading", async (req, res) => {
+  const ns_name = req.get('ns-name')
+  const cascading = req.get('cascading') == "true"
+
+  // get the config CR
+  req.k8s_api.get({
+    apiVersion: 'hnc.x-k8s.io/v1alpha2',
+    kind: 'HierarchyConfiguration',
+    metadata: {
+      name: "hierarchy",
+      namespace: ns_name
+    }
+  }).then(hierarchy_conf => {
+    // modify the config CR for new parent
+    hierarchy_conf.spec.allowCascadingDeletion = cascading
+    req.k8s_api.apply(hierarchy_conf).then(hierarchy_conf => {
+      res.end(`changed cascading deletion to ${cascading}`)
+    }).catch(err => handle_error(err, res))
+  }).catch(err => handle_error(err, res))
 })
 
 let ns_clients = {}

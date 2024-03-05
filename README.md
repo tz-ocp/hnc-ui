@@ -30,3 +30,4 @@ Live updates by using kubernetes watch!
 
 ### maybe todo
 - add cascading deletion button
+- add network policy as quota

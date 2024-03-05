@@ -58,12 +58,43 @@
           <div class="sb-header" style="margin: 20px; color: #83abf7;">
             Info
           </div>
-          <div id="sb-info" style="margin: 20px;"></div>
-          <div class="sb-header" style="margin: 20px; color: #d93333;">
+          <div id="sb-info" style="margin: 20px;">
+            <div id="sb-info-basic"></div>
+            <div id="sb-info-cascading">
+              <div id="sb-info-cascading-content" style="display: inline;"></div>
+              <div id="sb-cascading-btn" class="btn" style="float: right;">Toggle</div>
+              <script>
+                document.getElementById("sb-cascading-btn").onclick = () => {
+                  const ns_name = selected_ns.data.name
+                  opts = {
+                    method: 'PUT',
+                    headers: {
+                      'ns-name': ns_name,
+                      'cascading': selected_ns.data.cascading ? false : true
+                    }
+                  }
+                  fetch('/api/change/cascading', opts)
+                    .then(res => {
+                      if (res.ok) {
+                        return res.text()
+                      } else {
+                        return res.text().then(text => {throw new Error(text)})
+                      }
+                    })
+                    .then(msg => console.log(msg))
+                    .catch(error => {
+                      console.error(error)
+                      alert("ERROR:" + error)
+                    });
+                }
+              </script>
+            </div>
+          </div>
+          <div class="sb-header" style="margin: 20px; color: #de4343;">
             HierarchicalResourceQuota
           </div>
           <div id="sb-quota" style="margin: 20px;">
-            <div id="sb-quota-content"></div>
+            <div id="sb-quota-content" class="content" style="display: inline;"></div>
             <div id="sb-quota-edit-btn" class="btn" style="float: right;">Edit</div>
             <script>
               document.getElementById("sb-quota-edit-btn").onclick = () => {
@@ -92,20 +123,51 @@
               }
             </script>
           </div>
+          <div class="sb-header" style="margin: 20px; color: #19ccb4;">
+            Network Policy
+          </div>
+          <div id="sb-network" style="margin: 20px;">
+            <div id="sb-network-content" class="content" style="display: inline;"></div>
+            <div id="sb-network-edit-btn" class="btn" style="float: right;">Edit</div>
+            <script>
+              document.getElementById("sb-network-edit-btn").onclick = () => {
+                if (selected_ns.data.network) {
+                  const network_policy = Object.assign({}, selected_ns.data.network)
+                  if (network_policy.status) { delete network_policy.status }
+                  if (network_policy.metadata.managedFields) { delete network_policy.metadata.managedFields }
+                  if (network_policy.metadata.annotations?.["kubectl.kubernetes.io/last-applied-configuration"]) { delete network_policy.metadata.annotations["kubectl.kubernetes.io/last-applied-configuration"] }
+                  edit_popup_display(jsyaml.dump(network_policy))
+                } else {
+                  edit_popup_display(trim_multiline(`
+                  apiVersion: networking.k8s.io/v1
+                  kind: NetworkPolicy
+                  metadata:
+                    name: default-deny-all
+                    namespace: ${selected_ns.data.metadata.name}
+                  spec:
+                    podSelector: {}
+                    policyTypes:
+                    - Ingress
+                    - Egress
+                  `))
+                }
+              }
+            </script>
+          </div>
           <div class="sb-header" style="margin: 20px; color: #e1dd0c;">
             Usage
           </div>
-          <div id="sb-usage" style="margin: 20px;">
+          <div id="sb-usage" class="content" style="margin: 20px;">
           </div>
           <div class="sb-header" style="margin: 20px; color: #05b505;">
             Annotations
           </div>
-          <div id="sb-annotations" style="margin: 20px;">
+          <div id="sb-annotations" class="content" style="margin: 20px;">
           </div>
           <div class="sb-header" style="margin: 20px; color: #f783c7;">
             Labels
           </div>
-          <div id="sb-labels" style="margin: 20px;">
+          <div id="sb-labels" class="content" style="margin: 20px;">
           </div>
         </div>
       </div>
@@ -314,6 +376,14 @@ textarea {
   font-size: 20px;
   padding: 5px;
 }
+
+.content {
+  white-space: pre-line;
+}
+
+.shadowed {
+  text-shadow: 1px 1px 0px black, -1px 1px 0px black, -1px -1px 0px black, 1px -1px 0px black;
+}
     </style>
     <script id="hierarchy-graph">
 let selected_ns
@@ -438,10 +508,10 @@ async function flip_tree() {
 function update_right_bar_text() {
   const right_bar = d3.select('#right-bar')
   right_bar.select('#sb-name').text(selected_ns.data.name);
-  right_bar.select('#sb-info').html(`
-  creation: ${new Date(selected_ns.data.metadata.creationTimestamp).toDateString()}
-  `);
+  right_bar.select('#sb-info-basic').html(`creation: ${new Date(selected_ns.data.metadata.creationTimestamp).toDateString()}`);
+  right_bar.select('#sb-info-cascading-content').html(`allowed cascading deletion: ${selected_ns.data.cascading}`);
   right_bar.select('#sb-quota-content').html(quota_to_string(selected_ns.data.quota));
+  right_bar.select('#sb-network-content').html(network_to_string(selected_ns.data.network));
   right_bar.select('#sb-usage').html(usage_to_string(selected_ns.data.usage));
   right_bar.select('#sb-annotations').html(annotations_to_string(selected_ns.data.metadata.annotations));
   right_bar.select('#sb-labels').html(labels_to_string(selected_ns.data.metadata.labels));
@@ -451,8 +521,8 @@ function quota_to_string(quota) {
   if (quota) {
     if (quota.message) {
       return quota.message
-    } else {
-      return Object.keys(quota.spec.hard).map(key => `${key}: ${quota.status.used[key]}/${quota.spec.hard[key]}`).join('<br>')
+    } else if (quota.status) {
+      return Object.keys(quota.spec.hard).map(key => `${key}: ${quota.status.used[key]}/${quota.spec.hard[key]}`).join('\n')
     }
   } else {
     return "None"
@@ -463,7 +533,7 @@ function usage_to_string(usage) {
     if (usage.message) {
       return usage.message
     } else {
-      return Object.keys(usage.status.used).map(key => `${key}: ${usage.status.used[key]}`).join('<br>')
+      return Object.keys(usage.status.used).map(key => `${key}: ${usage.status.used[key]}`).join('\n')
     }
   } else {
     return "Unknown (need to create quota to be able to know)"
@@ -491,6 +561,17 @@ function labels_to_string(labels) {
         return `${key}: ${labels[key]}<br>`
       }
     }).join('')
+  } else {
+    return "None"
+  }
+}
+function network_to_string(network) {
+  if (network) {
+    if (network.message) {
+      return network.message
+    } else {
+      return jsyaml.dump(network.spec)
+    }
   } else {
     return "None"
   }
@@ -632,14 +713,23 @@ function update(source) {
 
   nodeTextRight
     .append("xhtml:div")
-    .attr("class", "terminating")
-    .style("text-shadow", "1px 1px 0px black, -1px 1px 0px black, -1px -1px 0px black, 1px -1px 0px black")
+    .attr("class", "terminating shadowed")
     .text("❌");
+
+  nodeTextRight
+    .append("xhtml:div")
+    .attr("class", "cascading shadowed")
+    .text("⚠️");
 
   nodeTextRight
     .append("xhtml:div")
     .attr("class", "quota")
     .text("Q");
+
+  nodeTextRight
+    .append("xhtml:div")
+    .attr("class", "network")
+    .text("N");
 
   nodeTextRight
     .append("xhtml:div")
@@ -687,9 +777,21 @@ function update(source) {
     });
   
   foreignObjectUpdate
+    .select(".cascading")
+    .style("display", function(d) {
+      return d.data.cascading ? "block" : "none";
+    });
+
+  foreignObjectUpdate
     .select(".quota")
     .style("display", function(d) {
       return d.data.quota ? "block" : "none";
+    });
+
+  foreignObjectUpdate
+    .select(".network")
+    .style("display", function(d) {
+      return d.data.network ? "block" : "none";
     });
 
   foreignObjectUpdate
@@ -1048,6 +1150,10 @@ function update_obj(obj_update) {
     update_hrq(obj_update)
   } else if (obj_update.object.kind === 'ResourceQuota') {
     update_quota(obj_update)
+  } else if (obj_update.object.kind === 'HierarchyConfiguration') {
+    update_hierarchy_config(obj_update)
+  } else if (obj_update.object.kind === 'NetworkPolicy') {
+    update_network_policy(obj_update)
   } else {
     console.log('unknown type: ' + obj_update.object.kind)
   }
@@ -1121,6 +1227,38 @@ async function update_quota(obj_update) {
     node.data.usage = undefined
   } else {
     console.log("unhandled quota update type: ", obj_update.type)
+  }
+  update(node)
+  if (selected_ns?.data?.name === ns_name) {
+    update_right_bar_text();
+  }
+}
+
+async function update_network_policy(obj_update) {
+  const ns_name = obj_update.object.metadata.namespace
+  const node = await findNodeRetries(root, ns_name)
+  if (obj_update.type === 'ADDED' || obj_update.type === 'MODIFIED') {
+    node.data.network = obj_update.object
+  } else if (obj_update.type === 'DELETED') {
+    node.data.network = undefined
+  } else {
+    console.log("unhandled network policy update type: ", obj_update.type)
+  }
+  update(node)
+  if (selected_ns?.data?.name === ns_name) {
+    update_right_bar_text();
+  }
+}
+
+async function update_hierarchy_config(obj_update) {
+  const ns_name = obj_update.object.metadata.namespace
+  const node = await findNodeRetries(root, ns_name)
+  if (obj_update.type === 'ADDED' || obj_update.type === 'MODIFIED') {
+    node.data.cascading = obj_update.object.spec.allowCascadingDeletion ? true : false
+  } else if (obj_update.type === 'DELETED') {
+    node.data.cascading = undefined
+  } else {
+    console.log("unhandled hierarchy config update type: ", obj_update.type)
   }
   update(node)
   if (selected_ns?.data?.name === ns_name) {
