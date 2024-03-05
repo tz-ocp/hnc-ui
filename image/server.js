@@ -398,6 +398,9 @@ async function server_watch_ns() {
     console.log(chalk.green(`starting watch on namespaces`))
 
     // reset cache if watch was restarted (good for avoiding bugs)
+    if (log_level == "DEBUG") {
+      console.log(`dumping namespaces cache:\n${ns_cache}`)
+    }
     ns_cache = {}
 
     // keep updating the cache + clients
