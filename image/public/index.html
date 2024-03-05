@@ -193,6 +193,12 @@
           <span> Delete Namespace </span>
         </div>
       </div>
+      <div id="change-parent-option" style="padding: 0;">
+        <hr>
+        <div id="change-parent" class="option-text">
+          <span> Change Parent </span>
+        </div>
+      </div>
     </div>
 
     <style>
@@ -365,6 +371,9 @@ svg
 
   d3.select('#delete-ns-option')
     .style('display', event.display_delete_ns ? "block" : "none");
+
+  d3.select('#change-parent-option')
+    .style('display', event.change_parent ? "block" : "none");
 
   event.preventDefault();
 });
@@ -562,6 +571,10 @@ function update(source) {
   .on("contextmenu", function(event, d) {
     event.display_create_subns = true;
     event.display_delete_ns = true;
+    // changing parent allowed only if not subnamespace
+    if (!d.data.is_subnamespace) {
+      event.change_parent = true;
+    }
     event.d = d;
   })
   .attr("class", "node");
@@ -915,6 +928,7 @@ function create_node(ns_name) {
 
 document.getElementById("create-ns").addEventListener("click",function () {
   const ns_name = prompt("what is the namespace name?")
+  const parent_ns = selected_ns?.data?.name
   if (ns_name) {
     opts = {
       method: 'POST',
@@ -922,8 +936,8 @@ document.getElementById("create-ns").addEventListener("click",function () {
         'ns-name': ns_name
       }
     }
-    if (selected_ns?.data?.name) {
-      opts.headers['parent-ns'] = selected_ns.data.name
+    if (parent_ns) {
+      opts.headers['parent-ns'] = parent_ns
     }
     fetch('/api/create/ns', opts)
       .then(res => {
@@ -942,12 +956,13 @@ document.getElementById("create-ns").addEventListener("click",function () {
 })
 document.getElementById("create-subns").addEventListener("click",function () {
   const ns_name = prompt("what is the namespace name?")
+  const parent_ns = selected_ns.data.name
   if (ns_name) {
     opts = {
       method: 'POST',
       headers: {
         'ns-name': ns_name,
-        'parent-ns': selected_ns.data.name
+        'parent-ns': parent_ns
       }
     }
     fetch('/api/create/sub-ns', opts)
@@ -975,6 +990,32 @@ document.getElementById("delete-ns").addEventListener("click",function () {
       }
     }
     fetch('/api/delete/ns', opts)
+      .then(res => {
+        if (res.ok) {
+          return res.text()
+        } else {
+          return res.text().then(text => {throw new Error(text)})
+        }
+      })
+      .then(msg => console.log(msg))
+      .catch(error => {
+        console.error(error)
+        alert("ERROR:" + error)
+      });
+  }
+})
+document.getElementById("change-parent").addEventListener("click",function () {
+  const ns_name = selected_ns.data.name
+  const parent_ns = prompt("what is the new parent name?")
+  if (parent_ns) {
+    opts = {
+      method: 'PUT',
+      headers: {
+        'ns-name': ns_name,
+        'parent-ns': parent_ns
+      }
+    }
+    fetch('/api/change/parent', opts)
       .then(res => {
         if (res.ok) {
           return res.text()

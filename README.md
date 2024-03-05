@@ -29,5 +29,4 @@ You can easily view and manage your namespaces by simply right clicking!
 Live updates by using kubernetes watch!
 
 ### maybe todo
-- allow change namespace parent
 - add cascading deletion button

@@ -320,7 +320,7 @@ app.delete("/api/delete/ns", async (req, res) => {
         }
       }).then(() => {
         res.end(`successfully deleted namespace '${ns_name}'`)
-      })
+      }).catch(err => handle_error(err, res))
     } else {
       // delete the namespace
       req.k8s_api.delete({
@@ -331,7 +331,7 @@ app.delete("/api/delete/ns", async (req, res) => {
         }
       }).then(() => {
         res.end(`successfully deleted namespace '${ns_name}'`)
-      })
+      }).catch(err => handle_error(err, res))
     }
   })
   .catch(err => handle_error(err, res))
@@ -344,6 +344,32 @@ app.put("/api/apply", async (req, res) => {
     res.end(`succesfully applied object ${apply_res.metadata.name}`)
   })
   .catch(err => handle_error(err, res))
+})
+
+// change parent ns
+app.put("/api/change/parent", async (req, res) => {
+  const ns_name = req.get('ns-name')
+  const parent_ns = req.get('parent-ns')
+
+  if (parent_ns) {
+    // get the config CR
+    req.k8s_api.get({
+      apiVersion: 'hnc.x-k8s.io/v1alpha2',
+      kind: 'HierarchyConfiguration',
+      metadata: {
+        name: "hierarchy",
+        namespace: ns_name
+      }
+    }).then(hierarchy_conf => {
+      // modify the config CR for new parent
+      hierarchy_conf.spec.parent = parent_ns
+      req.k8s_api.apply(hierarchy_conf).then(hierarchy_conf => {
+        res.end(`changed parent ns to ${hierarchy_conf.spec.parent}`)
+      }).catch(err => handle_error(err, res))
+    }).catch(err => handle_error(err, res))
+  } else {
+    res.status(400).end(`you must specify parent_ns header`)
+  }
 })
 
 let ns_clients = {}
