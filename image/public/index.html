@@ -69,9 +69,9 @@
               document.getElementById("sb-quota-edit-btn").onclick = () => {
                 if (selected_ns.data.quota) {
                   const hrq = Object.assign({}, selected_ns.data.quota)
-                  delete hrq.status
-                  delete hrq.metadata.managedFields
-                  delete hrq.metadata.annotations["kubectl.kubernetes.io/last-applied-configuration"]
+                  if (hrq.status) { delete hrq.status }
+                  if (hrq.metadata.managedFields) { delete hrq.metadata.managedFields }
+                  if (hrq.metadata.annotations?.["kubectl.kubernetes.io/last-applied-configuration"]) { delete hrq.metadata.annotations["kubectl.kubernetes.io/last-applied-configuration"] }
                   edit_popup_display(jsyaml.dump(hrq))
                 } else {
                   edit_popup_display(trim_multiline(`
@@ -82,10 +82,10 @@
                     namespace: ${selected_ns.data.metadata.name}
                   spec:
                     hard:
-                      requests.cpu: "1"
-                      requests.memory: 1Gi
                       limits.cpu: "2"
                       limits.memory: 2Gi
+                      requests.cpu: "1"
+                      requests.memory: 1Gi
                       requests.nvidia.com/gpu: 4
                   `))
                 }
@@ -142,11 +142,11 @@
     </div>
     <script>
       function edit_popup_display(content) {
-        document.getElementById("edit_popup_content").innerHTML = content
+        document.getElementById("edit_popup_content").value = content
         document.getElementById("edit_popup").style.display = "block"
       }
       function edit_popup_apply() {
-        const yaml_obj = document.getElementById("edit_popup_content").innerHTML
+        const yaml_obj = document.getElementById("edit_popup_content").value
         opts = {
           method: 'PUT',
           headers: {
@@ -620,6 +620,7 @@ function update(source) {
   nodeTextRight
     .append("xhtml:div")
     .attr("class", "terminating")
+    .style("text-shadow", "1px 1px 0px black, -1px 1px 0px black, -1px -1px 0px black, 1px -1px 0px black")
     .text("❌");
 
   nodeTextRight

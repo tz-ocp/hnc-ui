@@ -18,6 +18,8 @@ const k8s = require('./k8s')
 
 const sa_k8s_api = new k8s(fs.readFileSync('/var/run/secrets/kubernetes.io/serviceaccount/token'))
 
+let log_level = process.env.LOG_LEVEL
+
 app.get('/logout', (req, res) => {
   res.redirect(301, process.env.LOGOUT_PATH)
 })
@@ -224,6 +226,9 @@ function user_sub_watch(req, res) {
   } while (ns_clients[req.connection_id])
   // check for user any updated namespace
   ns_clients[req.connection_id] = ns_name => {
+    if (log_level == "DEBUG") {
+      console.log(`user ${req.user} got update for namespace ${ns_name}`)
+    }
     user_check_ns(req, res, ns_name)
   }
 
@@ -336,7 +341,7 @@ app.delete("/api/delete/ns", async (req, res) => {
 app.put("/api/apply", async (req, res) => {
   await req.k8s_api.apply(req.body)
   .then(async (apply_res) => {
-    res.end(apply_res)
+    res.end(`succesfully applied object ${apply_res.metadata.name}`)
   })
   .catch(err => handle_error(err, res))
 })
@@ -371,6 +376,9 @@ async function server_watch_ns() {
 
     // keep updating the cache + clients
     await sa_k8s_api.watch(ns, event => {
+      if (log_level == "DEBUG") {
+        console.log(`namespace ${event.object.metadata.name} ${event.type}`)
+      }
       update_ns_cache(event)
       Object.keys(ns_clients).forEach(client => {
         ns_clients[client](event.object.metadata.name)

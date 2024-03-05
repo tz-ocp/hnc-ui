@@ -20,10 +20,10 @@ const default_opts = {
 
 class k8s {
   constructor(token) {
-    this.update_token(token)
+    this.set_token(token)
   }
 
-  update_token(token) {
+  set_token(token) {
     this.opts = {
       ...default_opts,
       headers: {
@@ -54,8 +54,14 @@ class k8s {
 
   apply(object) {
     const url = this.create_url(object).toString()
-    // TODO use kubectl npm instead? cuz apply is way too hard
-    return axios.post(url, object, this.opts).then(res => res.data.items ? res.data.items : res.data).catch(err => this.verbose_error(err, url, object))
+    return axios.put(url, object, this.opts).then(res => res.data.items ? res.data.items : res.data ).catch(err => {
+      // if object doesnt exists then create it
+      if (err.response.status == 404) {
+        this.create(object)
+      } else {
+        this.verbose_error(err, url, object)
+      }
+    })
   }
 
   watch(object, use_event, run_after_connected) {

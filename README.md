@@ -31,4 +31,3 @@ Live updates by using kubernetes watch!
 ### maybe todo
 - allow change namespace parent
 - add cascading deletion button
-- add modify hrq from the ui

@@ -22,6 +22,8 @@ k8s:
     env:
     - name: USE_SA_TOKEN
       value: "true"
+    #- name: LOG_LEVEL
+    #  value: DEBUG
     
   auth_proxy:
     image: nginx:1.19.3
@@ -107,6 +109,8 @@ ocp:
       value: "false"
     - name: LOGOUT_PATH
       value: "/oauth/sign_out"
+    #- name: LOG_LEVEL
+    #  value: DEBUG
 
   auth_proxy:
     image: ocp4/openshift4:4.10.26-x86_64-oauth-proxy
