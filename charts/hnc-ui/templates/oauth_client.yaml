@@ -4,7 +4,7 @@ kind: OAuthClient
 metadata:
   name: hnc
 redirectURIs:
-  - https://{{ .Values.ocp.ingress.host }}
+  - https://{{ tpl .Values.ocp.ingress.host $ }}
 secret: {{ .Values.ocp.client_secret }}
 grantMethod: auto
 {{- end }}
