@@ -27,3 +27,6 @@ The tree diagram is made with `d3.js`.
 
 You can easily view and manage your namespaces by simply right clicking!  
 Live updates by using kubernetes watch!
+
+# maybe todo
+change quotas+network so it would display all of them and not only the last one

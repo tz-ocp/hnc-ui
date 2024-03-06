@@ -421,25 +421,38 @@ app.put("/api/change/parent", async (req, res) => {
   const ns_name = req.get('ns-name')
   const parent_ns = req.get('parent-ns')
 
-  if (parent_ns) {
-    // get the config CR
-    req.k8s_api.get({
-      apiVersion: 'hnc.x-k8s.io/v1alpha2',
-      kind: 'HierarchyConfiguration',
-      metadata: {
-        name: "hierarchy",
-        namespace: ns_name
-      }
-    }).then(hierarchy_conf => {
-      // modify the config CR for new parent
-      hierarchy_conf.spec.parent = parent_ns
-      req.k8s_api.apply(hierarchy_conf).then(hierarchy_conf => {
-        res.end(`changed parent ns to ${parent_ns}`)
-      }).catch(err => handle_error(err, res))
-    }).catch(err => handle_error(err, res))
-  } else {
-    res.status(400).end(`you must specify parent_ns header`)
+  let hierarchy_conf = {
+    apiVersion: 'hnc.x-k8s.io/v1alpha2',
+    kind: 'HierarchyConfiguration',
+    metadata: {
+      name: "hierarchy",
+      namespace: ns_name
+    },
+    spec: {}
   }
+
+  // get the config CR
+  req.k8s_api.get(hierarchy_conf).then(hierarchy_conf => {
+    // modify the config CR for new parent
+    if (parent_ns) {
+      hierarchy_conf.spec.parent = parent_ns
+    } else {
+      delete hierarchy_conf.spec.parent
+    }
+    req.k8s_api.apply(hierarchy_conf).then(hierarchy_conf => {
+      res.end(`changed parent ns to ${parent_ns}`)
+    }).catch(err => handle_error(err, res))
+  }).catch(err => {
+    // if object doesnt exists then create it
+    if (err.statusCode == 404) {
+      if (parent_ns) {
+        hierarchy_conf.spec.parent = parent_ns
+      }
+      req.k8s_api.create(hierarchy_conf)
+    } else {
+      this.verbose_error(err, url, object)
+    }
+  })
 })
 
 // change parent ns

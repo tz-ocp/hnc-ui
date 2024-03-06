@@ -1109,7 +1109,7 @@ document.getElementById("delete-ns").addEventListener("click",function () {
 document.getElementById("change-parent").addEventListener("click",function () {
   const ns_name = selected_ns.data.name
   const parent_ns = prompt("what is the new parent name?")
-  if (parent_ns) {
+  if (parent_ns != null) {
     opts = {
       method: 'PUT',
       headers: {
