@@ -1185,6 +1185,7 @@ function update_namespace(obj_update) {
 
     add_ns_to_tree(node, parent)
 
+    // on first page load zoom to tree after first namespace received
     if (!got_first_ns) {
       setTimeout(() => {
         zoom_to_tree(0)
@@ -1193,7 +1194,7 @@ function update_namespace(obj_update) {
           .transition()
           .duration(200)
           .style('opacity', 1)
-      }, duration)
+      }, 600)
     }
   } else if (obj_update.type === 'DELETED') {
     remove_ns_from_tree(obj_update.object.metadata.name)
