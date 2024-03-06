@@ -245,7 +245,7 @@ async function user_check_ns(req, res, ns_name) {
 }
 
 async function verify_token(req) {
-  token_res = await req.k8s_api.create({
+  token_res = await sa_k8s_api.create({
     apiVersion: 'authentication.k8s.io/v1',
     kind: 'TokenReview',
     metadata: {
