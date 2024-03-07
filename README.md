@@ -29,4 +29,6 @@ You can easily view and manage your namespaces by simply right clicking!
 Live updates by using kubernetes watch!
 
 # maybe todo
-change quotas+network so it would display all of them and not only the last one
+- change quotas+network so it would display all of them and not only the last one
+- errors forwarding problem when changing parent ns
+- ns_cache problem
