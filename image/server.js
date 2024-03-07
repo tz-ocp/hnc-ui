@@ -504,7 +504,8 @@ async function server_watch_ns() {
 
     // reset cache if watch was restarted (good for avoiding bugs)
     if (log_level == "DEBUG") {
-      console.log(`dumping namespaces cache:\n${ns_cache}`)
+      console.log(`dumping namespaces cache:`)
+      console.log(ns_cache)
     }
     ns_cache = {}
 
