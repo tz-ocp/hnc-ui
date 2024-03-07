@@ -1,3 +1,4 @@
+const byline = require('byline')
 const axios = require('axios')
 const https = require('node:https')
 const querystring = require('querystring')
@@ -82,49 +83,17 @@ class k8s {
       ...this.opts,
       ...url
     }, res => {
+      const stream = byline(res)
       if (res.statusCode != 200) {
-        if (500 > res.statusCode && res.statusCode >= 400) {
-          watch_reject(new Error(`watching '${url.toString()}' failed, the return code was '${res.statusCode}'`))
-        } else {
-          watch_reject(new Error(`watching '${url.toString()}' failed, the return code isnt 200: '${res.statusCode}'`))
-        }
+        watch_reject(new Error(`watching '${url.toString()}' failed, the return code isnt 200: '${res.statusCode}'`))
       } else {
         if (run_after_connected) {
           run_after_connected()
         }
-        res.setEncoding('utf8')
-        let buffer = ""
-        res.on('data', chunk => {
-          buffer += chunk
-          const events = buffer.split('\n')
-          events.forEach((event, index) => {
-            let event_obj
-            try {
-              // try parsing event to object
-              event_obj = JSON.parse(event)
-            } catch(err) {
-              // if not last event then something broken inside the objects
-              if (index != events.length-1) {
-                throw `error parsing buffer while watching objects from k8s, the buffer is:\n${buffer}\nthe error is: \n${err}`
-              }
-            }
-  
-            // forward the event if succesfully parsed
-            if (event_obj) {
-              use_event(event_obj)
-            }
-  
-            // after last even reset the buffer
-            if (index == events.length - 1) {
-              if (event_obj) {
-                buffer = ""
-              } else {
-                buffer = event
-              }
-            }
-          })
+        stream.on('data', line => {
+          use_event(JSON.parse(line))
         })
-        res.on('end', () => {
+        stream.on('end', () => {
           watch_resolve()
         })
       }

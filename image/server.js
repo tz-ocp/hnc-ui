@@ -18,8 +18,6 @@ const k8s = require('./k8s')
 
 const sa_k8s_api = new k8s(fs.readFileSync('/var/run/secrets/kubernetes.io/serviceaccount/token'))
 
-let log_level = process.env.LOG_LEVEL
-
 app.get('/logout', (req, res) => {
   res.redirect(301, process.env.LOGOUT_PATH)
 })
@@ -296,8 +294,8 @@ function user_sub_watch(req, res) {
   } while (ns_clients[req.connection_id])
   // check for user any updated namespace
   ns_clients[req.connection_id] = ns_name => {
-    if (log_level == "DEBUG") {
-      console.log(`user ${req.user} got update for namespace ${ns_name}`)
+    if (process.env.LOG_LEVEL == "DEBUG") {
+      console.log(`DEBUG: user ${req.user} got update for namespace ${ns_name}`)
     }
     user_check_ns(req, res, ns_name)
   }
@@ -503,16 +501,16 @@ async function server_watch_ns() {
     console.log(chalk.green(`starting watch on namespaces`))
 
     // reset cache if watch was restarted (good for avoiding bugs)
-    if (log_level == "DEBUG") {
-      console.log(`dumping namespaces cache:`)
+    if (process.env.LOG_LEVEL == "DEBUG") {
+      console.log(`DEBUG: dumping namespaces cache:`)
       console.log(ns_cache)
     }
     ns_cache = {}
 
     // keep updating the cache + clients
     await sa_k8s_api.watch(ns, event => {
-      if (log_level == "DEBUG") {
-        console.log(`namespace ${event.object.metadata.name} ${event.type}`)
+      if (process.env.LOG_LEVEL == "DEBUG") {
+        console.log(`DEBUG: received namespace ${event.object.metadata.name} ${event.type}`)
       }
       update_ns_cache(event)
       Object.keys(ns_clients).forEach(client => {
