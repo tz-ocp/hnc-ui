@@ -96,9 +96,19 @@ class k8s {
         stream.on('end', () => {
           watch_resolve()
         })
+        stream.on('close', () => {
+          watch_resolve()
+        })
+        stream.on('error', err => {
+          watch_reject(err)
+        })
       }
     })
 
+    req.on('socket', socket => {
+      socket.setTimeout(30000)
+      socket.setKeepAlive(true, 30000)
+    })
     req.on('error', err => {
       watch_reject(err)
     })
