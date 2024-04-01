@@ -507,16 +507,21 @@ async function server_watch_ns() {
     }
     ns_cache = {}
 
-    // keep updating the cache + clients
-    await sa_k8s_api.watch(ns, event => {
-      if (process.env.LOG_LEVEL == "DEBUG") {
-        console.log(`DEBUG: received namespace ${event.object.metadata.name} ${event.type}`)
-      }
-      update_ns_cache(event)
-      Object.keys(ns_clients).forEach(client => {
-        ns_clients[client](event.object.metadata.name)
+    try {
+      // keep updating the cache + clients
+      await sa_k8s_api.watch(ns, event => {
+        if (process.env.LOG_LEVEL == "DEBUG") {
+          console.log(`DEBUG: received namespace ${event.object.metadata.name} ${event.type}`)
+        }
+        update_ns_cache(event)
+        Object.keys(ns_clients).forEach(client => {
+          ns_clients[client](event.object.metadata.name)
+        })
       })
-    })
+    } catch (err) {
+      console.log(chalk.red(`error watching namespaces:`))
+      console.log(chalk.red(err))
+    }
   }
 }
 

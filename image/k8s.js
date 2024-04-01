@@ -99,9 +99,6 @@ class k8s {
         stream.on('close', () => {
           watch_resolve()
         })
-        stream.on('error', err => {
-          watch_reject(err)
-        })
       }
     })
 
