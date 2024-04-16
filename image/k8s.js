@@ -85,7 +85,7 @@ class k8s {
     }, res => {
       const stream = byline(res)
       if (res.statusCode != 200) {
-        watch_reject(new Error(`watching '${url.toString()}' failed, the return code isnt 200: '${res.statusCode}'`))
+        doneCallOnce(new Error(`watching '${url.toString()}' failed, the return code isnt 200: '${res.statusCode}'`))
       } else {
         if (run_after_connected) {
           run_after_connected()
@@ -93,21 +93,34 @@ class k8s {
         stream.on('data', line => {
           use_event(JSON.parse(line))
         })
-        stream.on('end', () => {
-          watch_resolve()
-        })
         stream.on('close', () => {
-          watch_resolve()
+          doneCallOnce()
+        })
+        stream.on('error', (err) => {
+          doneCallOnce(err)
         })
       }
     })
+
+    let doneCalled = false;
+    const doneCallOnce = (err) => {
+        if (!doneCalled) {
+            req.destroy();
+            doneCalled = true;
+            if (err) {
+              watch_reject(err)
+            } else {
+              watch_resolve()
+            }
+        }
+    };
 
     req.on('socket', socket => {
       socket.setTimeout(30000)
       socket.setKeepAlive(true, 30000)
     })
     req.on('error', err => {
-      watch_reject(err)
+      doneCallOnce(err)
     })
 
     req.end()
