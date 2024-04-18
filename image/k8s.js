@@ -93,11 +93,14 @@ class k8s {
         stream.on('data', line => {
           use_event(JSON.parse(line))
         })
-        stream.on('close', () => {
-          doneCallOnce()
-        })
         stream.on('error', (err) => {
           doneCallOnce(err)
+        })
+        stream.on('end', () => {
+          doneCallOnce()
+        })
+        stream.on('close', () => {
+          doneCallOnce()
         })
       }
     })
@@ -113,7 +116,7 @@ class k8s {
               watch_resolve()
             }
         }
-    };
+    }
 
     req.on('socket', socket => {
       socket.setTimeout(30000)
@@ -121,6 +124,12 @@ class k8s {
     })
     req.on('error', err => {
       doneCallOnce(err)
+    })
+    req.on('end', () => {
+      doneCallOnce()
+    })
+    req.on('close', () => {
+      doneCallOnce()
     })
 
     req.end()
