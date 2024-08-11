@@ -1,0 +1,14 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: hnc-ui
+spec:
+  endpoints:
+  - path: /metrics
+    port: web
+    schema: https
+    tlsConfig:
+      insecureSkipVerify: true
+  selector:
+    matchLabels:
+      app: hnc-ui
