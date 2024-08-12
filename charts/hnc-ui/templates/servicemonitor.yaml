@@ -7,7 +7,7 @@ spec:
   endpoints:
   - path: /metrics
     port: web
-    schema: https
+    scheme: https
     tlsConfig:
       insecureSkipVerify: true
   selector:
