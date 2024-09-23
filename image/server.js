@@ -50,13 +50,13 @@ app.use(express.json());
 // so thats why the pod will listend for all namespaces and forwards their names to the user.
 // (that way when new namespace/object is being created we know that the client cant miss it)
 
-// the server is watching all the objects,
+// the server is watching only the namespaces, and clients watching only objects in each namespace,
 // i will use Server-Send Events (SSE) (when user asks some url, dont res.end(), instead just keep res.write()),
 // the kubernetes watch lasts 5 minutes (etcd 3 history limit), so i will keep the SSE upto 5 mins as well (its greate for refreshing permissions)
 
-// i think that each client will watch for his objects as well per namespace, because i wont wanna send api request each time something changes.
-// so the server will listen for all namespaces, when namespace is added it will notify the clients, and the cliesnt will attempt to get the namespace info (ideally i would make the clie watch the namespace, but with view permissions on the namespace its not possible).
-// the server will save the list of namespaces locally in cache (only the names), cuz i wont wanna do extra quesry each time client connects.
+// each client will watch for his objects per namespace, because i dont wanna send api request each time something changes.
+// so the server will listen for all namespaces, when namespace is added/modified it will notify the clients, and the cliesnt will attempt to get the namespace info (ideally i would make the client watch the namespace, but with watch permissions on all namespaces is not possible (bcz need cluster wide permissions), while get on each namespace is possible).
+// the server will save the list of namespaces locally in cache (only the names), cuz i dont wanna do extra query each time new client connects.
 
 // API
 
@@ -375,16 +375,16 @@ app.delete("/api/delete/ns", async (req, res) => {
     }
   })
   .then(ns => {
-    const parent_ns = ns.metadata.annotations?.["hnc.x-k8s.io/subnamespace-of"]
+    const subnamespace_parent_ns = ns.metadata.annotations?.["hnc.x-k8s.io/subnamespace-of"]
 
-    if (parent_ns) {
+    if (subnamespace_parent_ns) {
       // delete son CR, to automatically delete namespace
       req.k8s_api.delete({
         apiVersion: 'hnc.x-k8s.io/v1alpha2',
         kind: 'SubnamespaceAnchor',
         metadata: {
           name: ns_name,
-          namespace: parent_ns
+          namespace: subnamespace_parent_ns
         }
       }).then(() => {
         res.end(`successfully deleted namespace '${ns_name}'`)
@@ -453,7 +453,7 @@ app.put("/api/change/parent", async (req, res) => {
   })
 })
 
-// change parent ns
+// change namespace cascading deletion property
 app.put("/api/change/cascading", async (req, res) => {
   const ns_name = req.get('ns-name')
   const cascading = req.get('cascading') == "true"

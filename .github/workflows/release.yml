@@ -12,13 +12,13 @@ jobs:
   release-chart:
     permissions:
       contents: write
-    uses: zfrhv/hnc-ui/.github/workflows/helm-build.yml@main
+    uses: tz-ocp/hnc-ui/.github/workflows/helm-build.yml@main
     with:
       version: ${{ inputs.version }}
   release-image:
     permissions:
       packages: write
       contents: read
-    uses: zfrhv/hnc-ui/.github/workflows/docker-image.yml@main
+    uses: tz-ocp/hnc-ui/.github/workflows/docker-image.yml@main
     with:
       version: ${{ inputs.version }}

@@ -18,7 +18,7 @@ k8s:
       secretName: hnc-user-config
 
   hnc_ui:
-    image: null # degault is ghcr.io/zfrhv/hnc-ui:{{ .Chart.Version }}
+    image: null # degault is ghcr.io/tz-ocp/hnc-ui:{{ .Chart.Version }}
     env:
     - name: USE_SA_TOKEN
       value: "true"
@@ -103,7 +103,7 @@ ocp:
       secretName: hnc-tls
 
   hnc_ui:
-    image: null # degault is ghcr.io/zfrhv/hnc-ui:{{ .Chart.Version }}
+    image: null # degault is ghcr.io/tz-ocp/hnc-ui:{{ .Chart.Version }}
     env:
     - name: USE_SA_TOKEN
       value: "false"

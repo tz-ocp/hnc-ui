@@ -190,7 +190,7 @@
         </svg>
       </div>
 
-      <a href="https://github.com/zfrhv/hnc-ui" target="_blank" style="float: right; text-decoration: none; background-color: #6a9b9a; border: solid #b1e0cf; border-radius: 30px; width: 30px; height: 30px; pointer-events: all;">
+      <a href="https://github.com/tz-ocp/hnc-ui" target="_blank" style="float: right; text-decoration: none; background-color: #6a9b9a; border: solid #b1e0cf; border-radius: 30px; width: 30px; height: 30px; pointer-events: all;">
         <div style="transform: scaleY(1.8); margin-left: 2px; margin-top: 7px; font-size: 13.5px; font-weight: bold; color: black;">
           &lt / &gt
         </div>
@@ -617,7 +617,7 @@ function zoom_to_tree(duration) {
 
 }
 
-function update(source) {
+function update(links_source_location) {
   const treeData = treemap(root);
   const nodes = treeData.descendants(),
     links = treeData.descendants().slice(1);
@@ -681,9 +681,9 @@ function update(source) {
     })
     .attr("transform", function(d) {
       if (left_to_right) {
-        return "translate(" + source.y + "," + source.x + ")";
+        return "translate(" + links_source_location.y + "," + links_source_location.x + ")";
       } else {
-        return "translate(" + source.x + "," + source.y + ")";
+        return "translate(" + links_source_location.x + "," + links_source_location.y + ")";
       }
     });
 
@@ -807,9 +807,9 @@ function update(source) {
     .style("opacity", 0)
     .attr("transform", function(d) {
       if (left_to_right) {
-        return "translate(" + source.y + "," + source.x + ")";
+        return "translate(" + links_source_location.y + "," + links_source_location.x + ")";
       } else {
-        return "translate(" + source.x + "," + source.y + ")";
+        return "translate(" + links_source_location.x + "," + links_source_location.y + ")";
       }
     })
     .remove();
@@ -823,7 +823,7 @@ function update(source) {
     .style("opacity", 0)
     .attr("class", "link")
     .attr("d", function(d) {
-      return diagonal(source, source);
+      return diagonal(links_source_location, links_source_location);
     });
 
   const linkUpdate = linkEnter.merge(link);
@@ -848,7 +848,7 @@ function update(source) {
     .duration(duration)
     .style("opacity", 0)
     .attr("d", function(d) {
-      return diagonal(source, source);
+      return diagonal(links_source_location, links_source_location);
     })
     .remove();
   function diagonal(s, d) {
@@ -1174,9 +1174,10 @@ function update_namespace(obj_update) {
     // if node didnt existed then create it
     if (!node) {
       node = create_node(ns_name)
-      node.data.metadata = obj_update.object.metadata;
-      node.data.is_subnamespace = obj_update.object.metadata.annotations?.["hnc.x-k8s.io/subnamespace-of"] !== undefined ? true : false;
     }
+
+    node.data.metadata = obj_update.object.metadata;
+    node.data.is_subnamespace = obj_update.object.metadata.annotations?.["hnc.x-k8s.io/subnamespace-of"] !== undefined ? true : false;
 
     // if namespace is terminating
     if (obj_update.object.metadata.deletionTimestamp) {

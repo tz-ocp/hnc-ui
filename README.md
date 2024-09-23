@@ -3,13 +3,13 @@ UI for [hierarchical namespaces in kubernetes](https://github.com/kubernetes-sig
 
 # Usage
 ```bash
-helm repo add zfrhv https://zfrhv.github.io/hnc-ui
+helm repo add tz-ocp https://tz-ocp.github.io/hnc-ui
 helm repo update
-helm install k8s-hnc-ui zfrhv/hnc-ui -n hnc-ui --create-namespace --set k8s.ingress.host=hnc.test
+helm install k8s-hnc-ui tz-ocp/hnc-ui -n hnc-ui --create-namespace --set k8s.ingress.host=hnc.test
 ```
 for openshift installation
 ```bash
-helm install k8s-hnc-ui zfrhv/hnc-ui -n hnc-ui --create-namespace --set ocp.ingress.host=hnc.test --set openshift=true
+helm install k8s-hnc-ui tz-ocp/hnc-ui -n hnc-ui --create-namespace --set ocp.ingress.host=hnc.test --set openshift=true
 ```
 you can view additional example [here](./charts/hnc-ui/examples)
 

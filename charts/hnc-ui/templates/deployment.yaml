@@ -63,7 +63,7 @@ spec:
 {{- . | toYaml | indent 8 -}}
 {{- end }}
       - name: server
-        image: {{ (.Values.openshift | ternary .Values.ocp .Values.k8s).hnc_ui.image | default (print "ghcr.io/zfrhv/hnc-ui:" .Chart.Version) }}
+        image: {{ (.Values.openshift | ternary .Values.ocp .Values.k8s).hnc_ui.image | default (print "ghcr.io/tz-ocp/hnc-ui:" .Chart.Version) }}
         ports:
         - containerPort: 8080
         env:

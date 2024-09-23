@@ -31,4 +31,4 @@ jobs:
         with:
           context: image
           push: true
-          tags: ghcr.io/zfrhv/hnc-ui:${{ inputs.version }}
+          tags: ghcr.io/tz-ocp/hnc-ui:${{ inputs.version }}
